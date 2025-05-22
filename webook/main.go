@@ -1,0 +1,64 @@
+package main
+
+import (
+	"github.com/kisara71/WeBook/webook/internal/repository"
+	"github.com/kisara71/WeBook/webook/internal/repository/dao"
+	"github.com/kisara71/WeBook/webook/internal/service"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"strings"
+	"time"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	"github.com/kisara71/WeBook/webook/internal/web"
+)
+
+func main() {
+	db := initDB()
+	server := initWebserver()
+	uh := initUser(db)
+	uh.RegisterRoutes(server)
+
+	if err := server.Run(":8080"); err != nil {
+		panic(err)
+		return
+	}
+}
+
+func initDB() *gorm.DB {
+	db, err := gorm.Open(mysql.Open("root:root@tcp(localhost:13316)/webook"))
+	if err != nil {
+		panic(err)
+	}
+	if err = dao.InitTable(db); err != nil {
+		panic(err)
+	}
+	return db
+}
+
+func initWebserver() *gin.Engine {
+	server := gin.Default()
+	server.Use(cors.New(cors.Config{
+		AllowMethods:     []string{"GET", "POST"},
+		AllowHeaders:     []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+		AllowOriginFunc: func(origin string) bool {
+			if strings.HasPrefix(origin, "http://localhost") {
+				return true
+			} else {
+				return strings.Contains(origin, "kisara71.xyz")
+			}
+		},
+		MaxAge: 1 * time.Second,
+	}))
+	return server
+}
+
+func initUser(db *gorm.DB) *web.UserHandler {
+	ud := dao.NewUserDao(db)
+	repo := repository.NewUserRepository(ud)
+	svc := service.NewUserService(repo)
+	uhr := web.InitUserHandler(svc)
+	return uhr
+}
