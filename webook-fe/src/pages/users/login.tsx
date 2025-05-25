@@ -11,6 +11,7 @@ const onFinish = (values: any) => {
                 alert(res.statusText);
                 return
             }
+            
             if(typeof res.data == 'string') {
                 alert(res.data);
             } else {

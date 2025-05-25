@@ -2,17 +2,38 @@ package dao
 
 import (
 	"context"
+	"errors"
+	"github.com/gin-gonic/gin"
+	"github.com/go-sql-driver/mysql"
+	"github.com/kisara71/WeBook/webook/internal/domain"
 	"gorm.io/gorm"
 	"time"
 )
 
-type UserPO struct {
-	Id       int64  `gorm:"primaryKey,autoIncrement"`
-	Email    string `gorm:"unique,uniqueIndex"`
-	Password string
+const (
+	uniqueConflictsErrno uint16 = 1062
+)
 
-	Ctime int64
-	Utime int64
+var (
+	ErrEmailDuplicate         = errors.New("邮箱冲突")
+	ErrInvalidEmailOrPassword = gorm.ErrRecordNotFound
+)
+
+type UserPO struct {
+	Id       int64  `gorm:"primaryKey;autoIncrement"`
+	Email    string `gorm:"uniqueIndex;type:varchar(30)"`
+	Password string `gorm:"type:varchar(100)"`
+
+	Ctime      int64
+	Utime      int64
+	UserInfoPO UserInfoPO `gorm:"foreignKey:Id;references:Id"`
+}
+
+type UserInfoPO struct {
+	Id       int64  `gorm:"primaryKey"`
+	Name     string `gorm:"type:varchar(10)"`
+	Birthday string `gorm:"type:date;default:NULL"`
+	AboutMe  string `gorm:"varchar(50)"`
 }
 
 type UserDao struct {
@@ -31,5 +52,65 @@ func (dao *UserDao) Insert(ctx context.Context, u UserPO) error {
 	u.Ctime = now
 	u.Utime = now
 
-	return dao.db.WithContext(ctx).Create(&u).Error
+	err := dao.db.WithContext(ctx).Create(&u).Error
+	var mysqlErr *mysql.MySQLError
+	if errors.As(err, &mysqlErr) {
+		if mysqlErr.Number == uniqueConflictsErrno {
+			return ErrEmailDuplicate
+		}
+	}
+	user, _ := dao.FindByEmail(ctx, u.Email)
+
+	errInertInfo := dao.db.WithContext(ctx).Create(&UserInfoPO{
+		Id: user.Id,
+	}).Error
+	if errInertInfo != nil {
+		return errInertInfo
+	}
+
+	return err
+}
+
+func (dao *UserDao) FindByEmail(ctx context.Context, email string) (domain.User, error) {
+	var u UserPO
+	err := dao.db.WithContext(ctx).Where("email = ?", email).First(&u)
+	if err.Error != nil {
+		if errors.Is(err.Error, ErrInvalidEmailOrPassword) {
+			return domain.User{}, ErrInvalidEmailOrPassword
+		} else {
+			return domain.User{}, err.Error
+		}
+	}
+	return domain.User{
+		Id:       u.Id,
+		Email:    u.Email,
+		Password: u.Password,
+	}, nil
+}
+
+func (dao *UserDao) Edit(ctx *gin.Context, info domain.UserInfo) error {
+	return dao.db.WithContext(ctx).Where("Id = ?", info.Id).Updates(&UserInfoPO{
+		Name:     info.Name,
+		Birthday: info.Birthday,
+		AboutMe:  info.AboutMe,
+	}).Error
+}
+
+func (dao *UserDao) FindUserInfoById(ctx context.Context, id int64) (domain.UserInfo, error) {
+	var u UserInfoPO
+	err := dao.db.WithContext(ctx).Where("Id = ?", id).First(&u).Error
+	return domain.UserInfo{
+		Id:       u.Id,
+		Birthday: u.Birthday,
+		Name:     u.Name,
+		AboutMe:  u.AboutMe,
+	}, err
+}
+func (dao *UserDao) FindUserById(ctx context.Context, id int64) (domain.User, error) {
+	var u UserPO
+	err := dao.db.WithContext(ctx).Where("Id = ?", id).First(&u).Error
+	return domain.User{
+		Id:    u.Id,
+		Email: u.Email,
+	}, err
 }

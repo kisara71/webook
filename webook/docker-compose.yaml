@@ -12,9 +12,9 @@ services:
     ports:
       - "13316:3306"
 
-#  redis:
-#    image: 'bitnami/redis:latest'
-#    entrypoint:
-#      - ALLOW_EMPTY_PASSWORD=yes
-#    ports:
-#      - '6397:6397'
+  redis:
+    image: 'bitnami/redis:latest'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - '13322:6379'

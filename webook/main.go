@@ -1,9 +1,12 @@
 package main
 
 import (
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/redis"
 	"github.com/kisara71/WeBook/webook/internal/repository"
 	"github.com/kisara71/WeBook/webook/internal/repository/dao"
 	"github.com/kisara71/WeBook/webook/internal/service"
+	"github.com/kisara71/WeBook/webook/internal/web/middleware"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"strings"
@@ -52,6 +55,15 @@ func initWebserver() *gin.Engine {
 		},
 		MaxAge: 1 * time.Second,
 	}))
+	store, err := redis.NewStore(16, "tcp", "localhost:13322", "", "", []byte("d25MZ9waMGelpa9GrTQcawfIeL1YrORY"))
+	//store := cookie.NewStore([]byte("secret"))
+	if err != nil {
+		panic(err)
+	}
+	server.Use(sessions.Sessions("ssid", store))
+
+	server.Use(middleware.NewLoginMiddlerBuilder().Build())
+
 	return server
 }
 
