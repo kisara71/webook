@@ -6,10 +6,12 @@ import (
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/kisara71/WeBook/webook/internal/domain"
 	"github.com/kisara71/WeBook/webook/internal/service"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
+	"time"
 )
 
 type UserHandler struct {
@@ -29,9 +31,12 @@ func InitUserHandler(svc *service.UserService) *UserHandler {
 func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug := server.Group("/users")
 	ug.POST("/signup", u.signUp)
-	ug.POST("/login", u.login)
-	ug.POST("edit", u.edit)
-	ug.GET("/profile", u.profile)
+	//ug.POST("/login", u.login)
+	ug.POST("login", u.loginJwtVer)
+	//ug.POST("edit", u.edit)
+	//ug.GET("/profile", u.profile)
+	ug.GET("/profile", u.profileJwtVer)
+	ug.POST("edit", u.editJwtVer)
 
 }
 
@@ -173,4 +178,108 @@ func (u *UserHandler) edit(ctx *gin.Context) {
 		"code":    0,
 		"message": "修改成功",
 	})
+}
+
+func (u *UserHandler) loginJwtVer(ctx *gin.Context) {
+	type loginJwtReq struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	var loginReq loginJwtReq
+
+	if err := ctx.Bind(&loginReq); err != nil {
+		ctx.String(http.StatusOK, "system error")
+		return
+	}
+	du, err := u.svc.FindByEmail(ctx, loginReq.Email)
+	if err != nil {
+		ctx.String(http.StatusOK, "invalid email")
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(du.Password), []byte(loginReq.Password))
+	if err != nil {
+		ctx.String(http.StatusOK, "check password or email")
+		return
+	}
+
+	tokenStr, err := jwt.NewWithClaims(jwt.SigningMethodHS512, UserClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 10)),
+		},
+		UserId: du.Id,
+	}).SignedString([]byte("2yJPXiYFxjQC6D4G73vHKoJ90bv7DNixOIsTDdulApdjv0QNoK5rOL9xSASLlQvg"))
+	if err != nil {
+		ctx.String(http.StatusInternalServerError, "internal error")
+		return
+	}
+	ctx.Header("x-jwt-token", tokenStr)
+	ctx.String(http.StatusOK, "login successfully")
+}
+
+func (u *UserHandler) profileJwtVer(ctx *gin.Context) {
+	ctxMsg, ok := ctx.Get("userId")
+	userId, _ := ctxMsg.(int64)
+	if !ok {
+		ctx.String(http.StatusUnauthorized, "invalid login token")
+		return
+	}
+	var (
+		err      error
+		user     domain.User
+		userinfo domain.UserInfo
+	)
+	user, err = u.svc.FindUserById(ctx, userId)
+	if err != nil {
+		ctx.String(http.StatusOK, "无效的帐号")
+		return
+	}
+	userinfo, _ = u.svc.FindUserInfoById(ctx, userId)
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"Email":    user.Email,
+		"Phone":    "",
+		"AboutMe":  userinfo.AboutMe,
+		"Nickname": userinfo.Name,
+		"Birthday": userinfo.Birthday,
+	})
+}
+
+func (u *UserHandler) editJwtVer(ctx *gin.Context) {
+	type editReq struct {
+		NickName string `json:"nickname"`
+		Birthday string `json:"birthday"`
+		AboutMe  string `json:"aboutMe"`
+	}
+	ctxMsg, ok := ctx.Get("userId")
+	if !ok {
+		ctx.String(http.StatusUnauthorized, "invalid token")
+		return
+	}
+	userId, _ := ctxMsg.(int64)
+	var req editReq
+	var err error
+	err = ctx.Bind(&req)
+	if err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
+
+	err = u.svc.Edit(ctx, domain.UserInfo{
+		Id:       userId,
+		Name:     req.NickName,
+		Birthday: req.Birthday,
+		AboutMe:  req.AboutMe,
+	})
+	if err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":    0,
+		"message": "修改成功",
+	})
+}
+
+type UserClaims struct {
+	jwt.RegisteredClaims
+	UserId int64
 }

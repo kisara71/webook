@@ -1,8 +1,6 @@
 package main
 
 import (
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/redis"
 	"github.com/kisara71/WeBook/webook/internal/repository"
 	"github.com/kisara71/WeBook/webook/internal/repository/dao"
 	"github.com/kisara71/WeBook/webook/internal/service"
@@ -45,6 +43,7 @@ func initWebserver() *gin.Engine {
 	server.Use(cors.New(cors.Config{
 		AllowMethods:     []string{"GET", "POST"},
 		AllowHeaders:     []string{"Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"x-jwt-token"},
 		AllowCredentials: true,
 		AllowOriginFunc: func(origin string) bool {
 			if strings.HasPrefix(origin, "http://localhost") {
@@ -55,14 +54,18 @@ func initWebserver() *gin.Engine {
 		},
 		MaxAge: 1 * time.Second,
 	}))
-	store, err := redis.NewStore(16, "tcp", "localhost:13322", "", "", []byte("d25MZ9waMGelpa9GrTQcawfIeL1YrORY"))
+	//store, err := redis.NewStore(16, "tcp", "localhost:13322", "", "", []byte("d25MZ9waMGelpa9GrTQcawfIeL1YrORY"))
 	//store := cookie.NewStore([]byte("secret"))
-	if err != nil {
-		panic(err)
-	}
-	server.Use(sessions.Sessions("ssid", store))
-
-	server.Use(middleware.NewLoginMiddlerBuilder().Build())
+	//if err != nil {
+	//	panic(err)
+	//}
+	//server.Use(sessions.Sessions("ssid", store))
+	//
+	//server.Use(middleware.NewLoginMiddlerBuilder().Build())
+	server.Use(middleware.NewLoginJwtVerMiddleWare([]string{
+		"/users/login",
+		"/users/signup",
+	}).Build())
 
 	return server
 }
