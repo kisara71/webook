@@ -7,6 +7,7 @@ import (
 	"github.com/kisara71/WeBook/webook/internal/web/middleware"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"net/http"
 	"strings"
 	"time"
 
@@ -16,11 +17,14 @@ import (
 )
 
 func main() {
-	db := initDB()
-	server := initWebserver()
-	uh := initUser(db)
-	uh.RegisterRoutes(server)
-
+	//db := initDB()
+	//server := initWebserver()
+	//uh := initUser(db)
+	//uh.RegisterRoutes(server)
+	server := gin.Default()
+	server.GET("/hello", func(c *gin.Context) {
+		c.String(http.StatusOK, "hello world")
+	})
 	if err := server.Run(":8080"); err != nil {
 		panic(err)
 		return
