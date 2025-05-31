@@ -36,7 +36,7 @@ func (u *UserService) FindByEmail(ctx context.Context, email string) (domain.Use
 	return u.repo.FindByEmail(ctx, email)
 }
 
-func (u *UserService) Edit(ctx *gin.Context, userInfo domain.UserInfo) error {
+func (u *UserService) Edit(ctx *gin.Context, userInfo domain.User) error {
 	return u.repo.Edit(ctx, userInfo)
 }
 
@@ -44,6 +44,6 @@ func (u *UserService) FindUserById(ctx *gin.Context, id int64) (domain.User, err
 	return u.repo.FindUserById(ctx, id)
 }
 
-func (u *UserService) FindUserInfoById(ctx *gin.Context, id int64) (domain.UserInfo, error) {
-	return u.repo.FindUserInfoById(ctx, id)
-}
+//func (u *UserService) FindUserInfoById(ctx *gin.Context, id int64) (domain.User, error) {
+//	return u.repo.FindUserInfoById(ctx, id)
+//}

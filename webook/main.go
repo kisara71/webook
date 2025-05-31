@@ -2,12 +2,13 @@ package main
 
 import (
 	"github.com/kisara71/WeBook/webook/internal/repository"
+	"github.com/kisara71/WeBook/webook/internal/repository/cache"
 	"github.com/kisara71/WeBook/webook/internal/repository/dao"
 	"github.com/kisara71/WeBook/webook/internal/service"
 	"github.com/kisara71/WeBook/webook/internal/web/middleware"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"net/http"
 	"strings"
 	"time"
 
@@ -17,14 +18,14 @@ import (
 )
 
 func main() {
-	//db := initDB()
-	//server := initWebserver()
-	//uh := initUser(db)
-	//uh.RegisterRoutes(server)
-	server := gin.Default()
-	server.GET("/hello", func(c *gin.Context) {
-		c.String(http.StatusOK, "hello world")
-	})
+	db := initDB()
+	server := initWebserver()
+	uh := initUser(db)
+	uh.RegisterRoutes(server)
+	//server := gin.Default()
+	//server.GET("/hello", func(c *gin.Context) {
+	//	c.String(http.StatusOK, "hello world")
+	//})
 	if err := server.Run(":8080"); err != nil {
 		panic(err)
 		return
@@ -76,7 +77,10 @@ func initWebserver() *gin.Engine {
 
 func initUser(db *gorm.DB) *web.UserHandler {
 	ud := dao.NewUserDao(db)
-	repo := repository.NewUserRepository(ud)
+	client := cache.NewUserCache(redis.NewClient(&redis.Options{
+		Addr: "localhost:13322",
+	}), time.Minute*15)
+	repo := repository.NewUserRepository(ud, client)
 	svc := service.NewUserService(repo)
 	uhr := web.InitUserHandler(svc)
 	return uhr

@@ -2,7 +2,6 @@ package web
 
 import (
 	"errors"
-	"fmt"
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -91,7 +90,6 @@ func (u *UserHandler) signUp(ctx *gin.Context) {
 	}
 
 	ctx.String(http.StatusOK, "注册成功")
-	fmt.Printf("%v\n", req)
 }
 
 func (u *UserHandler) login(ctx *gin.Context) {
@@ -128,23 +126,22 @@ func (u *UserHandler) login(ctx *gin.Context) {
 func (u *UserHandler) profile(ctx *gin.Context) {
 	userId := sessions.Default(ctx).Get("userId").(int64)
 	var (
-		err      error
-		user     domain.User
-		userinfo domain.UserInfo
+		err  error
+		user domain.User
 	)
 	user, err = u.svc.FindUserById(ctx, userId)
 	if err != nil {
 		ctx.String(http.StatusOK, "无效的帐号")
 		return
 	}
-	userinfo, _ = u.svc.FindUserInfoById(ctx, userId)
+	//user, _ = u.svc.FindUserInfoById(ctx, userId)
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"Email":    user.Email,
 		"Phone":    "",
-		"AboutMe":  userinfo.AboutMe,
-		"Nickname": userinfo.Name,
-		"Birthday": userinfo.Birthday,
+		"AboutMe":  user.AboutMe,
+		"Nickname": user.Name,
+		"Birthday": user.Birthday,
 	})
 }
 func (u *UserHandler) edit(ctx *gin.Context) {
@@ -164,7 +161,7 @@ func (u *UserHandler) edit(ctx *gin.Context) {
 		return
 	}
 
-	err = u.svc.Edit(ctx, domain.UserInfo{
+	err = u.svc.Edit(ctx, domain.User{
 		Id:       userId,
 		Name:     req.NickName,
 		Birthday: req.Birthday,
@@ -194,13 +191,13 @@ func (u *UserHandler) loginJwtVer(ctx *gin.Context) {
 	du, err := u.svc.FindByEmail(ctx, loginReq.Email)
 	if err != nil {
 		ctx.String(http.StatusOK, "invalid email")
+		return
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(du.Password), []byte(loginReq.Password))
 	if err != nil {
 		ctx.String(http.StatusOK, "check password or email")
 		return
 	}
-
 	tokenStr, err := jwt.NewWithClaims(jwt.SigningMethodHS512, UserClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 10)),
@@ -223,23 +220,22 @@ func (u *UserHandler) profileJwtVer(ctx *gin.Context) {
 		return
 	}
 	var (
-		err      error
-		user     domain.User
-		userinfo domain.UserInfo
+		err  error
+		user domain.User
 	)
 	user, err = u.svc.FindUserById(ctx, userId)
 	if err != nil {
 		ctx.String(http.StatusOK, "无效的帐号")
 		return
 	}
-	userinfo, _ = u.svc.FindUserInfoById(ctx, userId)
+	//user, _ = u.svc.FindUserInfoById(ctx, userId)
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"Email":    user.Email,
 		"Phone":    "",
-		"AboutMe":  userinfo.AboutMe,
-		"Nickname": userinfo.Name,
-		"Birthday": userinfo.Birthday,
+		"AboutMe":  user.AboutMe,
+		"Nickname": user.Name,
+		"Birthday": user.Birthday,
 	})
 }
 
@@ -263,7 +259,7 @@ func (u *UserHandler) editJwtVer(ctx *gin.Context) {
 		return
 	}
 
-	err = u.svc.Edit(ctx, domain.UserInfo{
+	err = u.svc.Edit(ctx, domain.User{
 		Id:       userId,
 		Name:     req.NickName,
 		Birthday: req.Birthday,
