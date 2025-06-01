@@ -42,11 +42,13 @@ func (u *UserRepository) Edit(ctx *gin.Context, info domain.User) error {
 	if err != nil {
 		return err
 	}
-	newUser, _ := u.userDao.FindUserById(ctx, info.Id)
-	err = u.userCache.Set(ctx, newUser)
-	if err != nil {
-		// log
-	}
+	go func() {
+		newUser, _ := u.userDao.FindUserById(ctx, info.Id)
+		err = u.userCache.Set(ctx, newUser)
+		if err != nil {
+			// log
+		}
+	}()
 	return nil
 }
 
@@ -58,9 +60,16 @@ func (u *UserRepository) FindUserById(ctx *gin.Context, id int64) (domain.User, 
 		if err != nil {
 			return domain.User{}, err
 		}
-		err = u.userCache.Set(ctx, du)
+		go func() {
+			newUser, _ := u.userDao.FindUserById(ctx, id)
+			err = u.userCache.Set(ctx, newUser)
+			if err != nil {
+				// log
+			}
+		}()
 		return du, nil
 	}
+
 	return domain.User{}, errors.New("redis error")
 
 }
