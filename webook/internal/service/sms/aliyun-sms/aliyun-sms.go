@@ -1,6 +1,7 @@
 package aliyun_sms
 
 import (
+	"context"
 	"fmt"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	dysmsapi20170525 "github.com/alibabacloud-go/dysmsapi-20170525/v5/client"
@@ -28,7 +29,7 @@ func NewService(endpoint string) (*Service, error) {
 	}, nil
 }
 
-func (s *Service) Send(msg sms.Message) error {
+func (s *Service) Send(ctx context.Context, msg sms.Message) error {
 	request := &dysmsapi20170525.SendSmsRequest{
 		PhoneNumbers:  tea.String(msg.PhoneNumbers),
 		SignName:      tea.String(msg.SignName),

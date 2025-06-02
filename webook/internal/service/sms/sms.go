@@ -1,5 +1,7 @@
 package sms
 
+import "context"
+
 type Message struct {
 	PhoneNumbers string
 	SignName     string
@@ -8,5 +10,5 @@ type Message struct {
 }
 
 type Service interface {
-	Send(msg Message) error
+	Send(context.Context, Message) error
 }
