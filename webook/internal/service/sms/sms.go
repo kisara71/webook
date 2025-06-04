@@ -4,8 +4,6 @@ import "context"
 
 type Message struct {
 	PhoneNumbers string
-	SignName     string
-	TemplateCode string
 	TemplateParm string
 }
 

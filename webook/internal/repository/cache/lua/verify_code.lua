@@ -17,6 +17,7 @@ cnt = tonumber(cnt)
 local expected = ARGV[1]
 if cnt <=0 then
     --  too many tries
+
     return -1
 elseif expected == redis.call("get", key) then
         redis.call("del", key..":cnt")

@@ -8,6 +8,14 @@ import (
 	"math/rand/v2"
 )
 
+var (
+	ErrSendTooFrequent      = repository.ErrSendTooFrequent
+	ErrSystemError          = repository.ErrSystemError
+	ErrInvalidCode          = repository.ErrInvalidCode
+	ErrTooManyVerifications = repository.ErrTooManyVerifications
+	ErrWrongCode            = repository.ErrWrongCode
+)
+
 type CodeService struct {
 	codeRepo *repository.CodeRepository
 	sms      sms.Service
@@ -27,8 +35,6 @@ func (c *CodeService) Send(ctx context.Context, biz, phone string) error {
 		return err
 	}
 	err = c.sms.Send(ctx, sms.Message{
-		SignName:     "阿里云短信测试",
-		TemplateCode: "SMS_154950909",
 		TemplateParm: fmt.Sprintf("{\"code\":\"%d\"}", code),
 		PhoneNumbers: phone,
 	})

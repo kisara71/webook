@@ -5,6 +5,7 @@ import (
 	"github.com/kisara71/WeBook/webook/internal/repository/cache"
 	"github.com/kisara71/WeBook/webook/internal/repository/dao"
 	"github.com/kisara71/WeBook/webook/internal/service"
+	memory_sms "github.com/kisara71/WeBook/webook/internal/service/sms/memory-sms"
 	"github.com/kisara71/WeBook/webook/internal/web/middleware"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
@@ -68,6 +69,8 @@ func initWebserver() *gin.Engine {
 	server.Use(middleware.NewLoginJwtVerMiddleWare([]string{
 		"/users/login",
 		"/users/signup",
+		"/users/login_sms/code/send",
+		"/users/login_sms",
 	}).Build())
 
 	return server
@@ -75,11 +78,18 @@ func initWebserver() *gin.Engine {
 
 func initUser(db *gorm.DB) *web.UserHandler {
 	ud := dao.NewUserDao(db)
-	client := cache.NewUserCache(redis.NewClient(&redis.Options{
+	redisClient := redis.NewClient(&redis.Options{
 		Addr: "localhost:13322",
-	}), time.Minute*15)
-	repo := repository.NewUserRepository(ud, client)
-	svc := service.NewUserService(repo)
-	uhr := web.InitUserHandler(svc)
+	})
+	client := cache.NewUserCache(redisClient, time.Minute*15)
+	userRepo := repository.NewUserRepository(ud, client)
+	userSvc := service.NewUserService(userRepo)
+
+	codeCache := cache.NewCodeCache(redisClient)
+	smsRepo := repository.NewCodeRepository(codeCache)
+	//smsSvc, _ := aliyun_sms.NewService("dysmsapi.aliyuncs.com")
+	smsSvc := memory_sms.NewService()
+	codeSvc := service.NewCodeService(smsRepo, smsSvc)
+	uhr := web.InitUserHandler(userSvc, codeSvc)
 	return uhr
 }

@@ -5,6 +5,14 @@ import (
 	"github.com/kisara71/WeBook/webook/internal/repository/cache"
 )
 
+var (
+	ErrSendTooFrequent      = cache.ErrSendTooFrequent
+	ErrSystemError          = cache.ErrSystemError
+	ErrInvalidCode          = cache.ErrInvalidCode
+	ErrTooManyVerifications = cache.ErrTooManyVerifications
+	ErrWrongCode            = cache.ErrWrongCode
+)
+
 type CodeRepository struct {
 	cache *cache.CodeCache
 }

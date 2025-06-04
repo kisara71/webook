@@ -2,7 +2,9 @@ package dao
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/go-sql-driver/mysql"
 	"github.com/kisara71/WeBook/webook/internal/domain"
 	"gorm.io/gorm"
@@ -16,17 +18,17 @@ const (
 var (
 	ErrEmailDuplicate         = errors.New("邮箱冲突")
 	ErrInvalidEmailOrPassword = gorm.ErrRecordNotFound
-	ErrIdNotFound             = gorm.ErrRecordNotFound
+	ErrRecordNotFound         = gorm.ErrRecordNotFound
 )
 
 type UserPO struct {
-	Id       int64  `gorm:"primaryKey;autoIncrement"`
-	Email    string `gorm:"uniqueIndex;type:varchar(50)"`
-	Password string `gorm:"type:varchar(200)"`
-
-	Name     string `gorm:"type:varchar(10)"`
-	Birthday string `gorm:"type:date;default:NULL"`
-	AboutMe  string `gorm:"varchar(50)"`
+	Id       int64          `gorm:"primaryKey;autoIncrement"`
+	Email    sql.NullString `gorm:"uniqueIndex;type:varchar(50)"`
+	Password string         `gorm:"type:varchar(200)"`
+	Phone    sql.NullString `gorm:"uniqueIndex;type:varchar(20)"`
+	Name     string         `gorm:"type:varchar(10)"`
+	Birthday string         `gorm:"type:date;default:NULL"`
+	AboutMe  string         `gorm:"varchar(50)"`
 	Ctime    int64
 	Utime    int64
 }
@@ -67,11 +69,7 @@ func (dao *UserDao) FindByEmail(ctx context.Context, email string) (domain.User,
 			return domain.User{}, err.Error
 		}
 	}
-	return domain.User{
-		Id:       u.Id,
-		Email:    u.Email,
-		Password: u.Password,
-	}, nil
+	return dao.entityToDomain(u), nil
 }
 
 func (dao *UserDao) Edit(ctx context.Context, info domain.User) error {
@@ -96,11 +94,21 @@ func (dao *UserDao) Edit(ctx context.Context, info domain.User) error {
 func (dao *UserDao) FindUserById(ctx context.Context, id int64) (domain.User, error) {
 	var u UserPO
 	err := dao.db.WithContext(ctx).Where("Id = ?", id).First(&u).Error
+	return dao.entityToDomain(u), err
+}
+func (dao *UserDao) FindUser(ctx context.Context, filed string, value any) (domain.User, error) {
+	var u UserPO
+	err := dao.db.WithContext(ctx).Where(fmt.Sprintf("%s = ?", filed), value).First(&u).Error
+	return dao.entityToDomain(u), err
+}
+
+func (dao *UserDao) entityToDomain(ud UserPO) domain.User {
 	return domain.User{
-		Id:       u.Id,
-		Email:    u.Email,
-		Birthday: u.Birthday,
-		Name:     u.Name,
-		AboutMe:  u.AboutMe,
-	}, err
+		Id:       ud.Id,
+		Name:     ud.Name,
+		Phone:    ud.Phone.String,
+		Email:    ud.Email.String,
+		AboutMe:  ud.AboutMe,
+		Birthday: ud.Birthday,
+	}
 }

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
 	"github.com/kisara71/WeBook/webook/internal/domain"
 	"github.com/kisara71/WeBook/webook/internal/repository"
 	"golang.org/x/crypto/bcrypt"
@@ -11,6 +10,7 @@ import (
 var (
 	ErrEmailDuplicate         = repository.ErrEmailDuplicate
 	ErrInvalidEmailOrPassword = repository.ErrInvalidEmailOrPassword
+	ErrUserNotExist           = repository.ErrRecordNotExist
 )
 
 type UserService struct {
@@ -36,12 +36,18 @@ func (u *UserService) FindByEmail(ctx context.Context, email string) (domain.Use
 	return u.repo.FindByEmail(ctx, email)
 }
 
-func (u *UserService) Edit(ctx *gin.Context, userInfo domain.User) error {
+func (u *UserService) Edit(ctx context.Context, userInfo domain.User) error {
 	return u.repo.Edit(ctx, userInfo)
 }
 
-func (u *UserService) FindUserById(ctx *gin.Context, id int64) (domain.User, error) {
+func (u *UserService) FindUserById(ctx context.Context, id int64) (domain.User, error) {
 	return u.repo.FindUserById(ctx, id)
+}
+func (u *UserService) FindUser(ctx context.Context, filed string, value any) (domain.User, error) {
+	return u.repo.FindUser(ctx, filed, value)
+}
+func (u *UserService) FindOrCreateByPhone(ctx context.Context, phone string) (domain.User, error) {
+	return u.repo.FindOrCreateByPhone(ctx, phone)
 }
 
 //func (u *UserService) FindUserInfoById(ctx *gin.Context, id int64) (domain.User, error) {
