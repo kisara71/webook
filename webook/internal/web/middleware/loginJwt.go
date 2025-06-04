@@ -51,11 +51,11 @@ func (l *LoginJwtVerMiddleWare) Build() gin.HandlerFunc {
 	}
 }
 
-func NewLoginJwtVerMiddleWare(ignorePath ...any) *LoginJwtVerMiddleWare {
+func NewLoginJwtVerMiddleWare(ignorePath []string) *LoginJwtVerMiddleWare {
 	if len(ignorePath) == 0 {
 		return nil
 	}
 	return &LoginJwtVerMiddleWare{
-		IgnorePath: ignorePath[0].([]string),
+		IgnorePath: ignorePath,
 	}
 }

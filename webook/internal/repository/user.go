@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/kisara71/WeBook/webook/internal/domain"
 	"github.com/kisara71/WeBook/webook/internal/repository/cache"
+	"github.com/kisara71/WeBook/webook/internal/repository/cache/redisCache"
 	"github.com/kisara71/WeBook/webook/internal/repository/dao"
 )
 
@@ -17,10 +18,10 @@ var (
 
 type UserRepository struct {
 	userDao   *dao.UserDao
-	userCache *cache.UserCache
+	userCache cache.UserCache
 }
 
-func NewUserRepository(userDao *dao.UserDao, userCache *cache.UserCache) *UserRepository {
+func NewUserRepository(userDao *dao.UserDao, userCache cache.UserCache) *UserRepository {
 	return &UserRepository{
 		userDao:   userDao,
 		userCache: userCache,
@@ -63,7 +64,7 @@ func (u *UserRepository) Edit(ctx context.Context, info domain.User) error {
 func (u *UserRepository) FindUserById(ctx context.Context, id int64) (domain.User, error) {
 	if user, err := u.userCache.Get(ctx, id); err == nil {
 		return user, nil
-	} else if errors.Is(err, cache.ErrKeyNotFound) {
+	} else if errors.Is(err, redisCache.ErrKeyNotFound) {
 		du, err := u.userDao.FindUserById(ctx, id)
 		if err != nil {
 			return domain.User{}, err
@@ -78,7 +79,7 @@ func (u *UserRepository) FindUserById(ctx context.Context, id int64) (domain.Use
 		return du, nil
 	}
 
-	return domain.User{}, errors.New("redis error")
+	return domain.User{}, errors.New("redisCache error")
 
 }
 func (u *UserRepository) FindUser(ctx context.Context, filed string, value any) (domain.User, error) {

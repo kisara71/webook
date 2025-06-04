@@ -6,7 +6,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/kisara71/GoTemplate/Utils/kstring"
+	"github.com/kisara71/GoTemplate/pkg/kstring"
 	"github.com/kisara71/WeBook/webook/internal/domain"
 	"github.com/kisara71/WeBook/webook/internal/service"
 	"golang.org/x/crypto/bcrypt"
@@ -22,7 +22,7 @@ type UserHandler struct {
 	smsService       *service.CodeService
 }
 
-func InitUserHandler(userSvc *service.UserService, smsSvc *service.CodeService) *UserHandler {
+func NewUserHandler(userSvc *service.UserService, smsSvc *service.CodeService) *UserHandler {
 	return &UserHandler{
 		regValidateEmail: regexp.MustCompile("^[a-zA-Z0-9]+([-_.][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([-_.][a-zA-Z0-9]+)*\\.[a-z]{2,}$", regexp.None),
 		regValidatePWD:   regexp.MustCompile("^(?![0-9]+$)(?![a-zA-Z]+$)(?![0-9a-zA-Z]+$)(?![0-9\\W]+$)(?![a-zA-Z\\W]+$)[0-9A-Za-z\\W]{6,18}$", regexp.None),
