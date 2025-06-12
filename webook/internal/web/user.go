@@ -18,11 +18,11 @@ type UserHandler struct {
 	regValidateEmail *regexp.Regexp
 	regValidatePWD   *regexp.Regexp
 	regValidatePhone *regexp.Regexp
-	userService      *service.UserService
-	smsService       *service.CodeService
+	userService      service.UserService
+	smsService       service.CodeService
 }
 
-func NewUserHandler(userSvc *service.UserService, smsSvc *service.CodeService) *UserHandler {
+func NewUserHandler(userSvc service.UserService, smsSvc service.CodeService) *UserHandler {
 	return &UserHandler{
 		regValidateEmail: regexp.MustCompile("^[a-zA-Z0-9]+([-_.][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([-_.][a-zA-Z0-9]+)*\\.[a-z]{2,}$", regexp.None),
 		regValidatePWD:   regexp.MustCompile("^(?![0-9]+$)(?![a-zA-Z]+$)(?![0-9a-zA-Z]+$)(?![0-9\\W]+$)(?![a-zA-Z\\W]+$)[0-9A-Za-z\\W]{6,18}$", regexp.None),
@@ -83,7 +83,7 @@ func (u *UserHandler) signUp(ctx *gin.Context) {
 	}
 	//	service create user
 
-	err = u.userService.Create(ctx, domain.User{
+	err = u.userService.SignUp(ctx, domain.User{
 		Email:    req.Email,
 		Password: req.Password,
 	})
@@ -112,7 +112,7 @@ func (u *UserHandler) login(ctx *gin.Context) {
 		return
 	}
 	var user domain.User
-	user, err = u.userService.FindByEmail(ctx, req.Email)
+	user, err = u.userService.FindUserByEmail(ctx, req.Email)
 	if errors.Is(err, service.ErrInvalidEmailOrPassword) {
 		ctx.String(http.StatusOK, "用户名或密码错误")
 		return
@@ -195,20 +195,18 @@ func (u *UserHandler) loginJwtVer(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "system error")
 		return
 	}
-	du, err := u.userService.FindByEmail(ctx, loginReq.Email)
+	user, err := u.userService.Login(ctx, loginReq.Email, loginReq.Password)
 	if err != nil {
-		ctx.String(http.StatusOK, "invalid email")
+		if errors.Is(err, service.ErrInvalidEmailOrPassword) {
+			ctx.String(http.StatusOK, "密码或邮箱错误")
+			return
+		}
+		ctx.String(http.StatusInternalServerError, "系统错误")
 		return
 	}
-	err = bcrypt.CompareHashAndPassword([]byte(du.Password), []byte(loginReq.Password))
+	err = u.setJwtToken(ctx, user.Id)
 	if err != nil {
-		ctx.String(http.StatusOK, "check password or email")
-		return
-	}
-	err = u.setJwtToken(ctx, du.Id)
-	if err != nil {
-		ctx.String(http.StatusInternalServerError, "internal error")
-		return
+		// log
 	}
 	ctx.String(http.StatusOK, "login successfully")
 }
@@ -304,7 +302,8 @@ func (u *UserHandler) loginSmsSendCode(ctx *gin.Context) {
 	switch {
 	case errors.Is(err, nil):
 		ctx.JSON(http.StatusOK, Result{
-			Msg: "发送成功",
+			Code: 0,
+			Msg:  "发送成功",
 		})
 	case errors.Is(err, service.ErrSendTooFrequent):
 		ctx.JSON(http.StatusOK, Result{

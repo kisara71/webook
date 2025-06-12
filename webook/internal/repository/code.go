@@ -3,31 +3,39 @@ package repository
 import (
 	"context"
 	"github.com/kisara71/WeBook/webook/internal/repository/cache"
-	"github.com/kisara71/WeBook/webook/internal/repository/cache/redisCache"
 )
+
+type CodeRepository interface {
+	Store(ctx context.Context, biz, phone string, code int) error
+	VerifyCode(ctx context.Context, biz, phone string, code int) (bool, error)
+}
+
+func NewCodeRepository(c cache.CodeCache) CodeRepository {
+	return newCodeRepositoryV1(c)
+}
 
 var (
-	ErrSendTooFrequent      = redisCache.ErrSendTooFrequent
-	ErrSystemError          = redisCache.ErrSystemError
-	ErrInvalidCode          = redisCache.ErrInvalidCode
-	ErrTooManyVerifications = redisCache.ErrTooManyVerifications
-	ErrWrongCode            = redisCache.ErrWrongCode
+	ErrSendTooFrequent      = cache.ErrSendTooFrequent
+	ErrSystemError          = cache.ErrSystemError
+	ErrInvalidCode          = cache.ErrInvalidCode
+	ErrTooManyVerifications = cache.ErrTooManyVerifications
+	ErrWrongCode            = cache.ErrWrongCode
 )
 
-type CodeRepository struct {
+type codeRepositoryV1 struct {
 	codeCache cache.CodeCache
 }
 
-func NewCodeRepository(c cache.CodeCache) *CodeRepository {
-	return &CodeRepository{
+func newCodeRepositoryV1(c cache.CodeCache) CodeRepository {
+	return &codeRepositoryV1{
 		codeCache: c,
 	}
 }
 
-func (c *CodeRepository) Store(ctx context.Context, biz, phone string, code int) error {
-	return c.codeCache.Set(ctx, biz, phone, code)
+func (R *codeRepositoryV1) Store(ctx context.Context, biz, phone string, code int) error {
+	return R.codeCache.Set(ctx, biz, phone, code)
 }
 
-func (c *CodeRepository) VerifyCode(ctx context.Context, biz, phone string, code int) (bool, error) {
-	return c.codeCache.Verify(ctx, biz, phone, code)
+func (R *codeRepositoryV1) VerifyCode(ctx context.Context, biz, phone string, code int) (bool, error) {
+	return R.codeCache.Verify(ctx, biz, phone, code)
 }

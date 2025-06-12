@@ -9,8 +9,10 @@ package ioc
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/kisara71/WeBook/webook/internal/repository"
+	"github.com/kisara71/WeBook/webook/internal/repository/cache"
 	"github.com/kisara71/WeBook/webook/internal/repository/dao"
 	"github.com/kisara71/WeBook/webook/internal/service"
+	"github.com/kisara71/WeBook/webook/internal/service/sms"
 	"github.com/kisara71/WeBook/webook/internal/web"
 )
 
@@ -19,14 +21,14 @@ import (
 func InitWebServer() *gin.Engine {
 	v := InitMiddleWare()
 	db := InitDatabase()
-	userDao := dao.NewUserDao(db)
+	daoDao := dao.NewDao(db)
 	cmdable := InitRedis()
-	userCache := InitUserCache(cmdable)
-	userRepository := repository.NewUserRepository(userDao, userCache)
+	userCache := cache.NewUserCache(cmdable)
+	userRepository := repository.NewUserRepository(daoDao, userCache)
 	userService := service.NewUserService(userRepository)
-	codeCache := InitCodeCache(cmdable)
+	codeCache := cache.NewCodeCache(cmdable)
 	codeRepository := repository.NewCodeRepository(codeCache)
-	smsService := InitSMSService()
+	smsService := sms.NewSMSService()
 	codeService := service.NewCodeService(codeRepository, smsService)
 	userHandler := web.NewUserHandler(userService, codeService)
 	engine := InitGinEngine(v, userHandler)

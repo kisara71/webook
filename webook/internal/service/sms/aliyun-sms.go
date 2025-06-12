@@ -1,21 +1,20 @@
-package aliyun_sms
+package sms
 
 import (
 	"context"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	dysmsapi20170525 "github.com/alibabacloud-go/dysmsapi-20170525/v5/client"
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/kisara71/WeBook/webook/internal/service/sms"
 	"os"
 )
 
-type Service struct {
+type aliService struct {
 	client       *dysmsapi20170525.Client
 	signName     string
 	templateCode string
 }
 
-func NewService(endpoint, signame, templateCode string) (*Service, error) {
+func newSMSAliYun(endpoint, signName, templateCode string) (Service, error) {
 	config := &openapi.Config{
 		AccessKeyId:     tea.String(os.Getenv("ALIBABA_CLOUD_ACCESS_KEY_ID")),
 		AccessKeySecret: tea.String(os.Getenv("ALIBABA_CLOUD_ACCESS_KEY_SECRET")),
@@ -25,21 +24,22 @@ func NewService(endpoint, signame, templateCode string) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Service{
+	return &aliService{
 		client:       client,
-		signName:     signame,
+		signName:     signName,
 		templateCode: templateCode,
 	}, nil
 }
 
-func (s *Service) Send(ctx context.Context, msg sms.Message) error {
+func (S *aliService) Send(ctx context.Context, msg Message) error {
 	request := &dysmsapi20170525.SendSmsRequest{
-		PhoneNumbers:  tea.String(msg.PhoneNumbers),
-		SignName:      tea.String(s.signName),
-		TemplateCode:  tea.String(s.templateCode),
+		PhoneNumbers: tea.String(msg.PhoneNumbers),
+
+		SignName:      tea.String(S.signName),
+		TemplateCode:  tea.String(S.templateCode),
 		TemplateParam: tea.String(msg.TemplateParm),
 	}
-	_, err := s.client.SendSms(request)
+	_, err := S.client.SendSms(request)
 	if err != nil {
 		//	log
 		return err

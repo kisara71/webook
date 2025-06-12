@@ -10,3 +10,7 @@ type Message struct {
 type Service interface {
 	Send(context.Context, Message) error
 }
+
+func NewSMSService() Service {
+	return newSMSMemory()
+}

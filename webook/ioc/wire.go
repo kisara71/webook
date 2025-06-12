@@ -6,8 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 	"github.com/kisara71/WeBook/webook/internal/repository"
+	"github.com/kisara71/WeBook/webook/internal/repository/cache"
 	"github.com/kisara71/WeBook/webook/internal/repository/dao"
 	"github.com/kisara71/WeBook/webook/internal/service"
+	"github.com/kisara71/WeBook/webook/internal/service/sms"
 	"github.com/kisara71/WeBook/webook/internal/web"
 )
 
@@ -16,15 +18,15 @@ func InitWebServer() *gin.Engine {
 
 		InitDatabase, InitRedis,
 
-		dao.NewUserDao,
+		dao.NewDao,
 
-		InitUserCache, InitCodeCache,
+		cache.NewUserCache, cache.NewCodeCache,
 
-		repository.NewUserRepository, repository.NewCodeRepository,
+		repository.NewCodeRepository, repository.NewUserRepository,
 
-		InitSMSService,
+		sms.NewSMSService,
 
-		service.NewUserService, service.NewCodeService,
+		service.NewCodeService, service.NewUserService,
 
 		web.NewUserHandler,
 

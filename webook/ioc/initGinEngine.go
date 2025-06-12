@@ -26,6 +26,10 @@ func InitMiddleWare() []gin.HandlerFunc {
 				return strings.HasPrefix(origin, "http://localhost") || strings.Contains(origin, "kisara71.xyz")
 			},
 		}),
-		middleware.NewLoginJwtVerMiddleWare([]string{}).Build(),
+		middleware.NewLoginJwtVerMiddleWare([]string{
+			"/users/login_sms/code/send",
+			"/users/login",
+			"/users/login_sms",
+		}).Build(),
 	}
 }

@@ -1,4 +1,4 @@
-package redisCache
+package cache
 
 import (
 	"context"
@@ -8,6 +8,21 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+type CodeCache interface {
+	Set(ctx context.Context, biz, phone string, code int) error
+	Verify(ctx context.Context, biz, phone string, code int) (bool, error)
+}
+
+func NewCodeCache(client redis.Cmdable) CodeCache {
+	return newRedisCodeCache(client)
+}
+
+//go:embed lua/set_code.lua
+var setCodeScript string
+
+//go:embed lua/verify_code.lua
+var varifyCodeScript string
+
 var (
 	ErrSendTooFrequent      = errors.New("send code too frequent")
 	ErrSystemError          = errors.New("system error")
@@ -16,23 +31,17 @@ var (
 	ErrWrongCode            = errors.New("wrong code")
 )
 
-//go:embed lua/set_code.lua
-var setCodeScript string
-
-//go:embed lua/verify_code.lua
-var varifyCodeScript string
-
-type CodeCache struct {
+type redisCodeCache struct {
 	client redis.Cmdable
 }
 
-func NewCodeCache(client redis.Cmdable) *CodeCache {
-	return &CodeCache{
+func newRedisCodeCache(client redis.Cmdable) CodeCache {
+	return &redisCodeCache{
 		client: client,
 	}
 }
 
-func (c *CodeCache) Set(ctx context.Context, biz, phone string, code int) error {
+func (c *redisCodeCache) Set(ctx context.Context, biz, phone string, code int) error {
 	res, err := c.client.Eval(ctx, setCodeScript, []string{c.key(biz, phone)}, code).Int()
 	if err != nil {
 		return err
@@ -47,7 +56,7 @@ func (c *CodeCache) Set(ctx context.Context, biz, phone string, code int) error 
 
 	}
 }
-func (c *CodeCache) Verify(ctx context.Context, biz, phone string, code int) (bool, error) {
+func (c *redisCodeCache) Verify(ctx context.Context, biz, phone string, code int) (bool, error) {
 	res, err := c.client.Eval(ctx, varifyCodeScript, []string{c.key(biz, phone)}, code).Int()
 	if err != nil {
 		return false, nil
@@ -65,6 +74,6 @@ func (c *CodeCache) Verify(ctx context.Context, biz, phone string, code int) (bo
 		return false, ErrSystemError
 	}
 }
-func (c *CodeCache) key(biz, phone string) string {
+func (c *redisCodeCache) key(biz, phone string) string {
 	return fmt.Sprintf("phone_code:%s:%s", biz, phone)
 }
