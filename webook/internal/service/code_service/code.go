@@ -1,9 +1,9 @@
-package service
+package code_service
 
 import (
 	"context"
 	"fmt"
-	"github.com/kisara71/WeBook/webook/internal/repository"
+	"github.com/kisara71/WeBook/webook/internal/repository/code_repo"
 	"github.com/kisara71/WeBook/webook/internal/service/sms"
 	"math/rand/v2"
 )
@@ -13,24 +13,24 @@ type CodeService interface {
 	VerifyCode(ctx context.Context, biz, phone string, code int) (bool, error)
 }
 
-func NewCodeService(cp repository.CodeRepository, svc sms.Service) CodeService {
+func NewCodeService(cp code_repo.CodeRepository, svc sms.Service) CodeService {
 	return newCodeServiceV1(cp, svc)
 }
 
 var (
-	ErrSendTooFrequent      = repository.ErrSendTooFrequent
-	ErrSystemError          = repository.ErrSystemError
-	ErrInvalidCode          = repository.ErrInvalidCode
-	ErrTooManyVerifications = repository.ErrTooManyVerifications
-	ErrWrongCode            = repository.ErrWrongCode
+	ErrSendTooFrequent      = code_repo.ErrSendTooFrequent
+	ErrSystemError          = code_repo.ErrSystemError
+	ErrInvalidCode          = code_repo.ErrInvalidCode
+	ErrTooManyVerifications = code_repo.ErrTooManyVerifications
+	ErrWrongCode            = code_repo.ErrWrongCode
 )
 
 type codeServiceV1 struct {
-	codeRepo repository.CodeRepository
+	codeRepo code_repo.CodeRepository
 	sms      sms.Service
 }
 
-func newCodeServiceV1(r repository.CodeRepository, sms sms.Service) CodeService {
+func newCodeServiceV1(r code_repo.CodeRepository, sms sms.Service) CodeService {
 	return &codeServiceV1{
 		codeRepo: r,
 		sms:      sms,

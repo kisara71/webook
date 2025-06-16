@@ -10,6 +10,7 @@ import (
 	cachemock "github.com/kisara71/WeBook/webook/internal/repository/cache/mocks"
 	"github.com/kisara71/WeBook/webook/internal/repository/dao"
 	daomock "github.com/kisara71/WeBook/webook/internal/repository/dao/mocks"
+	"github.com/kisara71/WeBook/webook/internal/repository/user_repo"
 	"go.uber.org/mock/gomock"
 	"testing"
 )
@@ -74,7 +75,7 @@ func TestUserRepositoryV1_FindById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			repo := NewUserRepository(ts.mock(ctrl))
+			repo := user_repo.NewUserRepository(ts.mock(ctrl))
 			u, err := repo.FindById(context.Background(), ts.id)
 
 			assert.Equal(t, u.Id, ts.wantId)
@@ -129,7 +130,7 @@ func TestUserRepositoryV1_FindOrCreateByPhone(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			repo := NewUserRepository(tc.mock(ctrl), nil)
+			repo := user_repo.NewUserRepository(tc.mock(ctrl), nil)
 
 			u, err := repo.FindOrCreateByPhone(context.Background(), tc.phone)
 			assert.Equal(t, u.Phone, tc.wantPhone)

@@ -11,7 +11,7 @@ func InitDatabase() *gorm.DB {
 	if err != nil {
 		panic(err)
 	}
-	err = dao.InitTable(db)
+	err = db.AutoMigrate(&dao.UserEntity{}, &dao.Oauth2BindingEntity{})
 	if err != nil {
 		panic(err)
 	}

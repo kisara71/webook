@@ -50,7 +50,7 @@ func TestInsert(t *testing.T) {
 			require.NoError(t, err)
 
 			d := NewDao(db)
-			err = d.Insert(context.Background(), tc.user)
+			err = d.InsertUser(context.Background(), tc.user)
 			assert.Equal(t, tc.wantErr, err)
 
 		})

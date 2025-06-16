@@ -1,4 +1,4 @@
-package jwtHandler
+package util
 
 import (
 	"github.com/gin-gonic/gin"
@@ -6,14 +6,7 @@ import (
 	"time"
 )
 
-type handler struct {
-}
-
-func NewJwtHandler() Handler {
-	return &handler{}
-}
-
-func (h *handler) SetJwtToken(ctx *gin.Context, id int64) error {
+func SetJwtToken(ctx *gin.Context, id int64) error {
 	tokenStr, err := jwt.NewWithClaims(jwt.SigningMethodHS512, UserClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 10)),

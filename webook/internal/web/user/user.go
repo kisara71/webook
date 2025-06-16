@@ -1,4 +1,4 @@
-package web
+package user
 
 import (
 	"errors"
@@ -7,33 +7,33 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kisara71/GoTemplate/pkg/kstring"
 	"github.com/kisara71/WeBook/webook/internal/domain"
-	"github.com/kisara71/WeBook/webook/internal/service"
-	"github.com/kisara71/WeBook/webook/internal/web/jwtHandler"
+	"github.com/kisara71/WeBook/webook/internal/service/code_service"
+	"github.com/kisara71/WeBook/webook/internal/service/user_service"
+	"github.com/kisara71/WeBook/webook/internal/web"
+	"github.com/kisara71/WeBook/webook/internal/web/util"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
 )
 
-type UserHandler struct {
+type Handler struct {
 	regValidateEmail *regexp.Regexp
 	regValidatePWD   *regexp.Regexp
 	regValidatePhone *regexp.Regexp
-	userService      service.UserService
-	smsService       service.CodeService
-	jwtHd            jwtHandler.Handler
+	userService      user_service.UserService
+	smsService       code_service.CodeService
 }
 
-func NewUserHandler(userSvc service.UserService, smsSvc service.CodeService, jwtHd jwtHandler.Handler) *UserHandler {
-	return &UserHandler{
+func NewUserHandler(userSvc user_service.UserService, smsSvc code_service.CodeService) *Handler {
+	return &Handler{
 		regValidateEmail: regexp.MustCompile("^[a-zA-Z0-9]+([-_.][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([-_.][a-zA-Z0-9]+)*\\.[a-z]{2,}$", regexp.None),
 		regValidatePWD:   regexp.MustCompile("^(?![0-9]+$)(?![a-zA-Z]+$)(?![0-9a-zA-Z]+$)(?![0-9\\W]+$)(?![a-zA-Z\\W]+$)[0-9A-Za-z\\W]{6,18}$", regexp.None),
 		regValidatePhone: regexp.MustCompile("/^(13[0-9]|14[01456879]|15[0-35-9]|16[2567]|17[0-8]|18[0-9]|19[0-35-9])\\d{8}$/", regexp.None),
 		userService:      userSvc,
 		smsService:       smsSvc,
-		jwtHd:            jwtHd,
 	}
 }
 
-func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
+func (u *Handler) RegisterRoutes(server *gin.Engine) {
 	ug := server.Group("/users")
 	ug.POST("/signup", u.signUp)
 	//ug.POST("/login", u.login)
@@ -47,7 +47,7 @@ func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 
 }
 
-func (u *UserHandler) signUp(ctx *gin.Context) {
+func (u *Handler) signUp(ctx *gin.Context) {
 	type signUpReq struct {
 		Email      string `json:"email"`
 		Password   string `json:"password"`
@@ -89,7 +89,7 @@ func (u *UserHandler) signUp(ctx *gin.Context) {
 		Password: req.Password,
 	})
 	if err != nil {
-		if errors.Is(err, service.ErrEmailDuplicate) {
+		if errors.Is(err, user_service.ErrEmailDuplicate) {
 			ctx.String(http.StatusOK, "邮箱已注册")
 			return
 		}
@@ -100,7 +100,7 @@ func (u *UserHandler) signUp(ctx *gin.Context) {
 	ctx.String(http.StatusOK, "注册成功")
 }
 
-func (u *UserHandler) login(ctx *gin.Context) {
+func (u *Handler) login(ctx *gin.Context) {
 	type loginReq struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -114,7 +114,7 @@ func (u *UserHandler) login(ctx *gin.Context) {
 	}
 	var user domain.User
 	user, err = u.userService.FindUserByEmail(ctx, req.Email)
-	if errors.Is(err, service.ErrInvalidEmailOrPassword) {
+	if errors.Is(err, user_service.ErrInvalidEmailOrPassword) {
 		ctx.String(http.StatusOK, "用户名或密码错误")
 		return
 	}
@@ -131,7 +131,7 @@ func (u *UserHandler) login(ctx *gin.Context) {
 
 }
 
-func (u *UserHandler) profile(ctx *gin.Context) {
+func (u *Handler) profile(ctx *gin.Context) {
 	userId := sessions.Default(ctx).Get("userId").(int64)
 	var (
 		err  error
@@ -152,7 +152,7 @@ func (u *UserHandler) profile(ctx *gin.Context) {
 		"Birthday": user.Birthday,
 	})
 }
-func (u *UserHandler) edit(ctx *gin.Context) {
+func (u *Handler) edit(ctx *gin.Context) {
 	type editReq struct {
 		NickName string `json:"nickname"`
 		Birthday string `json:"birthday"`
@@ -185,7 +185,7 @@ func (u *UserHandler) edit(ctx *gin.Context) {
 	})
 }
 
-func (u *UserHandler) loginJwtVer(ctx *gin.Context) {
+func (u *Handler) loginJwtVer(ctx *gin.Context) {
 	type loginJwtReq struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -198,21 +198,21 @@ func (u *UserHandler) loginJwtVer(ctx *gin.Context) {
 	}
 	user, err := u.userService.Login(ctx, loginReq.Email, loginReq.Password)
 	if err != nil {
-		if errors.Is(err, service.ErrInvalidEmailOrPassword) {
+		if errors.Is(err, user_service.ErrInvalidEmailOrPassword) {
 			ctx.String(http.StatusOK, "密码或邮箱错误")
 			return
 		}
 		ctx.String(http.StatusInternalServerError, "系统错误")
 		return
 	}
-	err = u.jwtHd.SetJwtToken(ctx, user.Id)
+	err = util.SetJwtToken(ctx, user.Id)
 	if err != nil {
 		// log
 	}
 	ctx.String(http.StatusOK, "login successfully")
 }
 
-func (u *UserHandler) profileJwtVer(ctx *gin.Context) {
+func (u *Handler) profileJwtVer(ctx *gin.Context) {
 	ctxMsg, ok := ctx.Get("userId")
 	userId, _ := ctxMsg.(int64)
 	if !ok {
@@ -239,7 +239,7 @@ func (u *UserHandler) profileJwtVer(ctx *gin.Context) {
 	})
 }
 
-func (u *UserHandler) editJwtVer(ctx *gin.Context) {
+func (u *Handler) editJwtVer(ctx *gin.Context) {
 	type editReq struct {
 		NickName string `json:"nickname"`
 		Birthday string `json:"birthday"`
@@ -274,7 +274,7 @@ func (u *UserHandler) editJwtVer(ctx *gin.Context) {
 		"message": "修改成功",
 	})
 }
-func (u *UserHandler) loginSmsSendCode(ctx *gin.Context) {
+func (u *Handler) loginSmsSendCode(ctx *gin.Context) {
 	type SendCodeReq struct {
 		Phone string `json:"phone"`
 	}
@@ -288,24 +288,24 @@ func (u *UserHandler) loginSmsSendCode(ctx *gin.Context) {
 	err = u.smsService.Send(ctx, "user", req.Phone)
 	switch {
 	case errors.Is(err, nil):
-		ctx.JSON(http.StatusOK, Result{
+		ctx.JSON(http.StatusOK, web.Result{
 			Code: 0,
 			Msg:  "发送成功",
 		})
-	case errors.Is(err, service.ErrSendTooFrequent):
-		ctx.JSON(http.StatusOK, Result{
+	case errors.Is(err, code_service.ErrSendTooFrequent):
+		ctx.JSON(http.StatusOK, web.Result{
 			Code: 4,
 			Msg:  "验证码发送太频繁",
 		})
 	default:
-		ctx.JSON(http.StatusOK, Result{
+		ctx.JSON(http.StatusOK, web.Result{
 			Code: 5,
 			Msg:  "系统错误",
 		})
 	}
 }
 
-func (u *UserHandler) loginSms(ctx *gin.Context) {
+func (u *Handler) loginSms(ctx *gin.Context) {
 	type PhoneLoginReq struct {
 		Phone string `json:"phone"`
 		Code  string `json:"code"`
@@ -313,7 +313,7 @@ func (u *UserHandler) loginSms(ctx *gin.Context) {
 	var req PhoneLoginReq
 	err := ctx.Bind(&req)
 	if err != nil {
-		ctx.JSON(http.StatusOK, Result{
+		ctx.JSON(http.StatusOK, web.Result{
 			Code: 4,
 			Msg:  "系统错误",
 		})
@@ -321,7 +321,7 @@ func (u *UserHandler) loginSms(ctx *gin.Context) {
 	}
 	code, err := kstring.ToInt(req.Code)
 	if err != nil {
-		ctx.JSON(http.StatusOK, Result{
+		ctx.JSON(http.StatusOK, web.Result{
 			Code: 4,
 			Msg:  "系统错误",
 		})
@@ -331,34 +331,34 @@ func (u *UserHandler) loginSms(ctx *gin.Context) {
 	if same {
 		newUD, err := u.userService.FindOrCreateByPhone(ctx, req.Phone)
 		if err != nil {
-			ctx.JSON(http.StatusOK, Result{
+			ctx.JSON(http.StatusOK, web.Result{
 				Code: 4,
 				Msg:  "system error",
 			})
 			return
 		}
-		err = u.jwtHd.SetJwtToken(ctx, newUD.Id)
+		err = util.SetJwtToken(ctx, newUD.Id)
 		if err != nil {
 			//	log
 		}
-		ctx.JSON(http.StatusOK, Result{
+		ctx.JSON(http.StatusOK, web.Result{
 			Msg: "登录成功",
 		})
 		return
 	} else {
 		switch {
-		case errors.Is(err, service.ErrWrongCode):
-			ctx.JSON(http.StatusOK, Result{
+		case errors.Is(err, code_service.ErrWrongCode):
+			ctx.JSON(http.StatusOK, web.Result{
 				Code: 4,
 				Msg:  "验证码错误，请重新尝试",
 			})
-		case errors.Is(err, service.ErrTooManyVerifications):
-			ctx.JSON(http.StatusOK, Result{
+		case errors.Is(err, code_service.ErrTooManyVerifications):
+			ctx.JSON(http.StatusOK, web.Result{
 				Code: 4,
 				Msg:  "错误次数过多，请重新获取验证码",
 			})
 		default:
-			ctx.JSON(http.StatusOK, Result{
+			ctx.JSON(http.StatusOK, web.Result{
 				Code: 4,
 				Msg:  "系统错误",
 			})

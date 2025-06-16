@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"github.com/kisara71/WeBook/webook/internal/domain"
-	"github.com/kisara71/WeBook/webook/internal/repository"
 	repomocks "github.com/kisara71/WeBook/webook/internal/repository/mocks"
+	"github.com/kisara71/WeBook/webook/internal/repository/user_repo"
+	"github.com/kisara71/WeBook/webook/internal/service/user_service"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"golang.org/x/crypto/bcrypt"
@@ -16,14 +17,14 @@ func TestUserServiceV1_Login(t *testing.T) {
 
 	testCases := []struct {
 		name     string
-		mocks    func(ctrl *gomock.Controller) repository.UserRepository
+		mocks    func(ctrl *gomock.Controller) user_repo.UserRepository
 		user     domain.User
 		wantErr  error
 		wantUser domain.User
 	}{
 		{
 			name: "登录成功",
-			mocks: func(ctrl *gomock.Controller) repository.UserRepository {
+			mocks: func(ctrl *gomock.Controller) user_repo.UserRepository {
 				repo := repomocks.NewMockUserRepository(ctrl)
 				repo.EXPECT().FindByEmail(gomock.Any(), "123@qq.com").Return(domain.User{
 					Email:    "123@qq.com",
@@ -43,13 +44,13 @@ func TestUserServiceV1_Login(t *testing.T) {
 		},
 		{
 			name: "用户不存在",
-			mocks: func(ctrl *gomock.Controller) repository.UserRepository {
+			mocks: func(ctrl *gomock.Controller) user_repo.UserRepository {
 				repo := repomocks.NewMockUserRepository(ctrl)
-				repo.EXPECT().FindByEmail(gomock.Any(), "123@qq.com").Return(domain.User{}, repository.ErrRecordNotExist)
+				repo.EXPECT().FindByEmail(gomock.Any(), "123@qq.com").Return(domain.User{}, user_repo.ErrRecordNotExist)
 				return repo
 			},
 			wantUser: domain.User{},
-			wantErr:  ErrUserNotExist,
+			wantErr:  user_service.ErrUserNotExist,
 			user: domain.User{
 				Email:    "123@qq.com",
 				Password: "123456Q.",
@@ -57,7 +58,7 @@ func TestUserServiceV1_Login(t *testing.T) {
 		},
 		{
 			name: "邮箱或密码错误",
-			mocks: func(ctrl *gomock.Controller) repository.UserRepository {
+			mocks: func(ctrl *gomock.Controller) user_repo.UserRepository {
 				repo := repomocks.NewMockUserRepository(ctrl)
 				repo.EXPECT().FindByEmail(gomock.Any(), "123@qq.com").Return(domain.User{
 					Email:    "123@qq.com",
@@ -65,7 +66,7 @@ func TestUserServiceV1_Login(t *testing.T) {
 				return repo
 			},
 			wantUser: domain.User{},
-			wantErr:  ErrInvalidEmailOrPassword,
+			wantErr:  user_service.ErrInvalidEmailOrPassword,
 			user: domain.User{
 				Email:    "123@qq.com",
 				Password: "123456Q",
@@ -73,7 +74,7 @@ func TestUserServiceV1_Login(t *testing.T) {
 		},
 		{
 			name: "系统错误",
-			mocks: func(ctrl *gomock.Controller) repository.UserRepository {
+			mocks: func(ctrl *gomock.Controller) user_repo.UserRepository {
 				repo := repomocks.NewMockUserRepository(ctrl)
 				repo.EXPECT().FindByEmail(gomock.Any(), "123@qq.com").Return(domain.User{}, errors.New("系统错误"))
 				return repo
@@ -91,7 +92,7 @@ func TestUserServiceV1_Login(t *testing.T) {
 		t.Run(ts.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			usvc := NewUserService(ts.mocks(ctrl))
+			usvc := user_service.NewUserService(ts.mocks(ctrl))
 			user, err := usvc.Login(context.Background(), ts.user.Email, ts.user.Password)
 			assert.Equal(t, err, ts.wantErr)
 			assert.Equal(t, user, ts.wantUser)

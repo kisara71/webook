@@ -1,4 +1,4 @@
-package repository
+package user_repo
 
 import (
 	"context"
@@ -15,7 +15,6 @@ type UserRepository interface {
 	FindById(ctx context.Context, id int64) (domain.User, error)
 	FindOrCreateByPhone(ctx context.Context, phone string) (domain.User, error)
 	FindUser(ctx context.Context, filed string, value any) (domain.User, error)
-	FindOrCreateByOpenID(ctx context.Context, openID string) (domain.User, error)
 }
 
 func NewUserRepository(d dao.Dao, c cache.UserCache) UserRepository {
@@ -23,7 +22,7 @@ func NewUserRepository(d dao.Dao, c cache.UserCache) UserRepository {
 }
 
 var (
-	ErrEmailDuplicate         = dao.ErrEmailDuplicate
+	ErrEmailDuplicate         = dao.ErrDuplicate
 	ErrInvalidEmailOrPassword = dao.ErrInvalidEmailOrPassword
 	ErrRecordNotExist         = dao.ErrRecordNotFound
 )
@@ -39,27 +38,11 @@ func newUserRepositoryV1(userDao dao.Dao, userCache cache.UserCache) UserReposit
 		userCache: userCache,
 	}
 }
-func (u *userRepositoryV1) FindOrCreateByOpenID(ctx context.Context, openID string) (domain.User, error) {
-	user, err := u.userDao.FindUser(ctx, "OpenID", openID)
-	if err == nil {
-		return user, nil
-	} else if errors.Is(err, dao.ErrRecordNotFound) {
-		err = u.userDao.Insert(ctx, domain.User{
-			WechatInfo: domain.WechatInfo{
-				OpenID: openID,
-			},
-		})
-		if err != nil {
-			return domain.User{}, err
-		}
-		return u.FindUser(ctx, "OpenID", openID)
-	}
-	return domain.User{}, err
-}
-func (u *userRepositoryV1) Create(ctx context.Context, user domain.User) error {
-	return u.userDao.Insert(ctx, user)
-}
 
+func (u *userRepositoryV1) Create(ctx context.Context, user domain.User) error {
+	_, err := u.userDao.InsertUser(ctx, user)
+	return err
+}
 func (u *userRepositoryV1) FindByEmail(ctx context.Context, email string) (domain.User, error) {
 	return u.userDao.FindByEmail(ctx, email)
 }
@@ -108,13 +91,13 @@ func (u *userRepositoryV1) FindOrCreateByPhone(ctx context.Context, phone string
 	if err == nil {
 		return ud, nil
 	} else if errors.Is(err, dao.ErrRecordNotFound) {
-		err = u.Create(ctx, domain.User{
+		ud, err = u.userDao.InsertUser(ctx, domain.User{
 			Phone: phone,
 		})
 		if err != nil {
 			return domain.User{}, err
 		}
-		return u.FindUser(ctx, "Phone", phone)
+		return ud, nil
 	}
 	return domain.User{}, err
 }

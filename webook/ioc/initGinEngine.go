@@ -3,16 +3,19 @@ package ioc
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/kisara71/WeBook/webook/internal/web"
 	"github.com/kisara71/WeBook/webook/internal/web/middleware"
+	"github.com/kisara71/WeBook/webook/internal/web/oauth2"
+	"github.com/kisara71/WeBook/webook/internal/web/user"
 	"strings"
 )
 
-func InitGinEngine(mdw []gin.HandlerFunc, udl *web.UserHandler, wdl *web.WeChatHandler) *gin.Engine {
+func InitGinEngine(mdw []gin.HandlerFunc, udl *user.Handler, oauth2Hdls []oauth2.Handler) *gin.Engine {
 	server := gin.Default()
 	server.Use(mdw...)
 	udl.RegisterRoutes(server)
-	wdl.RegisterRoutes(server)
+	for _, hd := range oauth2Hdls {
+		hd.RegisterRoutes(server)
+	}
 	return server
 }
 

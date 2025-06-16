@@ -8,12 +8,15 @@ package ioc
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/kisara71/WeBook/webook/internal/repository"
+	"github.com/kisara71/WeBook/webook/internal/repository/auth_binding_repo"
 	"github.com/kisara71/WeBook/webook/internal/repository/cache"
+	"github.com/kisara71/WeBook/webook/internal/repository/code_repo"
 	"github.com/kisara71/WeBook/webook/internal/repository/dao"
-	"github.com/kisara71/WeBook/webook/internal/service"
-	"github.com/kisara71/WeBook/webook/internal/web"
-	"github.com/kisara71/WeBook/webook/internal/web/jwtHandler"
+	"github.com/kisara71/WeBook/webook/internal/repository/user_repo"
+	"github.com/kisara71/WeBook/webook/internal/service/auth_binding_service"
+	"github.com/kisara71/WeBook/webook/internal/service/code_service"
+	"github.com/kisara71/WeBook/webook/internal/service/user_service"
+	"github.com/kisara71/WeBook/webook/internal/web/user"
 )
 
 // Injectors from wire.go:
@@ -24,17 +27,17 @@ func InitWebServer() *gin.Engine {
 	daoDao := dao.NewDao(db)
 	cmdable := InitRedis()
 	userCache := cache.NewUserCache(cmdable)
-	userRepository := repository.NewUserRepository(daoDao, userCache)
-	userService := service.NewUserService(userRepository)
+	userRepository := user_repo.NewUserRepository(daoDao, userCache)
+	userService := user_service.NewUserService(userRepository)
 	codeCache := cache.NewCodeCache(cmdable)
-	codeRepository := repository.NewCodeRepository(codeCache)
+	codeRepository := code_repo.NewCodeRepository(codeCache)
 	rateLimiter := initRateLimiter(cmdable)
-	smsService := initSMS(rateLimiter)
-	codeService := service.NewCodeService(codeRepository, smsService)
-	handler := jwtHandler.NewJwtHandler()
-	userHandler := web.NewUserHandler(userService, codeService, handler)
-	wechatService := initWeChatService()
-	weChatHandler := web.NewWeChatHandler(wechatService, userService, handler)
-	engine := InitGinEngine(v, userHandler, weChatHandler)
+	service := initSMS(rateLimiter)
+	codeService := code_service.NewCodeService(codeRepository, service)
+	handler := user.NewUserHandler(userService, codeService)
+	repository := auth_binding_repo.NewRepository(daoDao)
+	auth_binding_serviceService := auth_binding_service.NewService(repository)
+	v2 := initOauth2Handlers(auth_binding_serviceService)
+	engine := InitGinEngine(v, handler, v2)
 	return engine
 }

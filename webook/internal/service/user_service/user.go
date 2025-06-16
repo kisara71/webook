@@ -1,10 +1,10 @@
-package service
+package user_service
 
 import (
 	"context"
 	"errors"
 	"github.com/kisara71/WeBook/webook/internal/domain"
-	"github.com/kisara71/WeBook/webook/internal/repository"
+	"github.com/kisara71/WeBook/webook/internal/repository/user_repo"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -16,28 +16,23 @@ type UserService interface {
 	FindUser(ctx context.Context, filed string, value any) (domain.User, error)
 	FindOrCreateByPhone(ctx context.Context, phone string) (domain.User, error)
 	Login(ctx context.Context, email string, password string) (domain.User, error)
-	FindOrCreateByWechat(ctx context.Context, info domain.WechatInfo) (domain.User, error)
 }
 
-func NewUserService(up repository.UserRepository) UserService {
+func NewUserService(up user_repo.UserRepository) UserService {
 	return newUserServiceV1(up)
 }
 
 var (
-	ErrEmailDuplicate         = repository.ErrEmailDuplicate
-	ErrInvalidEmailOrPassword = repository.ErrInvalidEmailOrPassword
-	ErrUserNotExist           = repository.ErrRecordNotExist
+	ErrEmailDuplicate         = user_repo.ErrEmailDuplicate
+	ErrInvalidEmailOrPassword = user_repo.ErrInvalidEmailOrPassword
+	ErrUserNotExist           = user_repo.ErrRecordNotExist
 )
 
 type userServiceV1 struct {
-	repo repository.UserRepository
+	repo user_repo.UserRepository
 }
 
-func (u *userServiceV1) FindOrCreateByWechat(ctx context.Context, info domain.WechatInfo) (domain.User, error) {
-	return u.repo.FindOrCreateByOpenID(ctx, info.OpenID)
-}
-
-func newUserServiceV1(userRepository repository.UserRepository) UserService {
+func newUserServiceV1(userRepository user_repo.UserRepository) UserService {
 	return &userServiceV1{
 		repo: userRepository,
 	}
@@ -72,7 +67,7 @@ func (u *userServiceV1) FindOrCreateByPhone(ctx context.Context, phone string) (
 func (u *userServiceV1) Login(ctx context.Context, email string, password string) (domain.User, error) {
 	du, err := u.FindUserByEmail(ctx, email)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotExist) {
+		if errors.Is(err, user_repo.ErrRecordNotExist) {
 			return domain.User{}, ErrUserNotExist
 		}
 		return domain.User{}, err

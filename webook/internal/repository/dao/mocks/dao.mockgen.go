@@ -104,7 +104,7 @@ func (mr *MockDaoMockRecorder) FindUser(ctx, filed, value any) *gomock.Call {
 // Insert mocks base method.
 func (m *MockDao) Insert(ctx context.Context, u dao.UserEntity) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Insert", ctx, u)
+	ret := m.ctrl.Call(m, "InsertUser", ctx, u)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
@@ -112,5 +112,5 @@ func (m *MockDao) Insert(ctx context.Context, u dao.UserEntity) error {
 // Insert indicates an expected call of Insert.
 func (mr *MockDaoMockRecorder) Insert(ctx, u any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Insert", reflect.TypeOf((*MockDao)(nil).Insert), ctx, u)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertUser", reflect.TypeOf((*MockDao)(nil).Insert), ctx, u)
 }

@@ -5,30 +5,33 @@ package ioc
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
-	"github.com/kisara71/WeBook/webook/internal/repository"
+	"github.com/kisara71/WeBook/webook/internal/repository/auth_binding_repo"
 	"github.com/kisara71/WeBook/webook/internal/repository/cache"
+	"github.com/kisara71/WeBook/webook/internal/repository/code_repo"
 	"github.com/kisara71/WeBook/webook/internal/repository/dao"
-	"github.com/kisara71/WeBook/webook/internal/service"
-	"github.com/kisara71/WeBook/webook/internal/web"
-	"github.com/kisara71/WeBook/webook/internal/web/jwtHandler"
+	"github.com/kisara71/WeBook/webook/internal/repository/user_repo"
+	"github.com/kisara71/WeBook/webook/internal/service/auth_binding_service"
+	"github.com/kisara71/WeBook/webook/internal/service/code_service"
+	"github.com/kisara71/WeBook/webook/internal/service/user_service"
+	"github.com/kisara71/WeBook/webook/internal/web/user"
 )
 
 func InitWebServer() *gin.Engine {
 	wire.Build(
 
-		InitDatabase, InitRedis, jwtHandler.NewJwtHandler, initRateLimiter,
+		InitDatabase, InitRedis, initRateLimiter,
 
 		dao.NewDao,
 
 		cache.NewUserCache, cache.NewCodeCache,
 
-		repository.NewCodeRepository, repository.NewUserRepository,
+		code_repo.NewCodeRepository, user_repo.NewUserRepository, auth_binding_repo.NewRepository,
 
-		initSMS,
+		initSMS, auth_binding_service.NewService,
 
-		service.NewCodeService, service.NewUserService, initWeChatService,
+		code_service.NewCodeService, user_service.NewUserService,
 
-		web.NewUserHandler, web.NewWeChatHandler,
+		user.NewUserHandler, initOauth2Handlers,
 
 		InitMiddleWare,
 

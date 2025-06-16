@@ -1,12 +1,12 @@
-package web
+package user
 
 import (
 	"bytes"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/assert/v2"
 	"github.com/kisara71/WeBook/webook/internal/domain"
-	"github.com/kisara71/WeBook/webook/internal/service"
 	svcmock "github.com/kisara71/WeBook/webook/internal/service/mocks"
+	"github.com/kisara71/WeBook/webook/internal/service/user_service"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"net/http"
@@ -19,7 +19,7 @@ func TestSignUp(t *testing.T) {
 	testCases := []struct {
 		name    string
 		reqBody string
-		getSvc  func(ctrl *gomock.Controller) service.UserService
+		getSvc  func(ctrl *gomock.Controller) user_service.UserService
 
 		wantBody string
 		wantCode int
@@ -33,7 +33,7 @@ func TestSignUp(t *testing.T) {
 				"confirmPassword": "123456Q."
 			}
 			`,
-			getSvc: func(ctrl *gomock.Controller) service.UserService {
+			getSvc: func(ctrl *gomock.Controller) user_service.UserService {
 				usvc := svcmock.NewMockUserService(ctrl)
 				usvc.EXPECT().SignUp(gomock.Any(), domain.User{
 					Email:    "123@qq.com",
@@ -47,7 +47,7 @@ func TestSignUp(t *testing.T) {
 		{
 			name:    "ctx Bind 失败",
 			reqBody: `dfsfds`,
-			getSvc: func(ctrl *gomock.Controller) service.UserService {
+			getSvc: func(ctrl *gomock.Controller) user_service.UserService {
 				return svcmock.NewMockUserService(ctrl)
 			},
 			wantCode: http.StatusBadRequest,
@@ -62,7 +62,7 @@ func TestSignUp(t *testing.T) {
 				"confirmPassword": "123456Q."
 			}
 			`,
-			getSvc: func(ctrl *gomock.Controller) service.UserService {
+			getSvc: func(ctrl *gomock.Controller) user_service.UserService {
 				usvc := svcmock.NewMockUserService(ctrl)
 
 				return usvc
@@ -79,7 +79,7 @@ func TestSignUp(t *testing.T) {
 				"confirmPassword": "123456Q."
 			}
 			`,
-			getSvc: func(ctrl *gomock.Controller) service.UserService {
+			getSvc: func(ctrl *gomock.Controller) user_service.UserService {
 				usvc := svcmock.NewMockUserService(ctrl)
 				return usvc
 			},
@@ -95,7 +95,7 @@ func TestSignUp(t *testing.T) {
 				"confirmPassword": "123456Q"
 			}
 			`,
-			getSvc: func(ctrl *gomock.Controller) service.UserService {
+			getSvc: func(ctrl *gomock.Controller) user_service.UserService {
 				usvc := svcmock.NewMockUserService(ctrl)
 				return usvc
 			},
@@ -111,12 +111,12 @@ func TestSignUp(t *testing.T) {
 				"confirmPassword": "123456Q."
 			}
 			`,
-			getSvc: func(ctrl *gomock.Controller) service.UserService {
+			getSvc: func(ctrl *gomock.Controller) user_service.UserService {
 				usvc := svcmock.NewMockUserService(ctrl)
 				usvc.EXPECT().SignUp(gomock.Any(), domain.User{
 					Email:    "123@qq.com",
 					Password: "123456Q.",
-				}).Return(service.ErrEmailDuplicate)
+				}).Return(user_service.ErrEmailDuplicate)
 				return usvc
 			},
 			wantBody: "邮箱已注册",
