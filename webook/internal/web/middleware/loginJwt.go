@@ -3,7 +3,7 @@ package middleware
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/kisara71/WeBook/webook/internal/web"
+	"github.com/kisara71/WeBook/webook/internal/web/jwtHandler"
 	"net/http"
 	"strings"
 	"time"
@@ -26,7 +26,7 @@ func (l *LoginJwtVerMiddleWare) Build() gin.HandlerFunc {
 			return
 		}
 		token := strings.Split(au, " ")
-		var userclaim web.UserClaims
+		var userclaim jwtHandler.UserClaims
 		tokenStr, err := jwt.ParseWithClaims(token[1], &userclaim, func(token *jwt.Token) (interface{}, error) {
 			return []byte("2yJPXiYFxjQC6D4G73vHKoJ90bv7DNixOIsTDdulApdjv0QNoK5rOL9xSASLlQvg"), nil
 		})
@@ -39,13 +39,13 @@ func (l *LoginJwtVerMiddleWare) Build() gin.HandlerFunc {
 			return
 		}
 		if userclaim.ExpiresAt.Sub(time.Now()) < time.Minute*1 {
-			newToken, _ := jwt.NewWithClaims(jwt.SigningMethodHS512, &web.UserClaims{
+			newToken, _ := jwt.NewWithClaims(jwt.SigningMethodHS512, &jwtHandler.UserClaims{
 				RegisteredClaims: jwt.RegisteredClaims{
 					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 10)),
 				},
 				UserId: userclaim.UserId,
 			}).SignedString([]byte("2yJPXiYFxjQC6D4G73vHKoJ90bv7DNixOIsTDdulApdjv0QNoK5rOL9xSASLlQvg"))
-			ctx.Header("x-jwt-token", newToken)
+			ctx.Header("x-jwtHandler-token", newToken)
 		}
 		ctx.Set("userId", userclaim.UserId)
 	}

@@ -43,7 +43,7 @@ func (m *MockCodeService) EXPECT() *MockCodeServiceMockRecorder {
 // Send mocks base method.
 func (m *MockCodeService) Send(ctx context.Context, biz, phone string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Send", ctx, biz, phone)
+	ret := m.ctrl.Call(m, "Add", ctx, biz, phone)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
@@ -51,7 +51,7 @@ func (m *MockCodeService) Send(ctx context.Context, biz, phone string) error {
 // Send indicates an expected call of Send.
 func (mr *MockCodeServiceMockRecorder) Send(ctx, biz, phone any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockCodeService)(nil).Send), ctx, biz, phone)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockCodeService)(nil).Send), ctx, biz, phone)
 }
 
 // VerifyCode mocks base method.

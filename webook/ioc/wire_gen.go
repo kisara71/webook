@@ -12,8 +12,8 @@ import (
 	"github.com/kisara71/WeBook/webook/internal/repository/cache"
 	"github.com/kisara71/WeBook/webook/internal/repository/dao"
 	"github.com/kisara71/WeBook/webook/internal/service"
-	"github.com/kisara71/WeBook/webook/internal/service/sms"
 	"github.com/kisara71/WeBook/webook/internal/web"
+	"github.com/kisara71/WeBook/webook/internal/web/jwtHandler"
 )
 
 // Injectors from wire.go:
@@ -28,9 +28,13 @@ func InitWebServer() *gin.Engine {
 	userService := service.NewUserService(userRepository)
 	codeCache := cache.NewCodeCache(cmdable)
 	codeRepository := repository.NewCodeRepository(codeCache)
-	smsService := sms.NewSMSService()
+	rateLimiter := initRateLimiter(cmdable)
+	smsService := initSMS(rateLimiter)
 	codeService := service.NewCodeService(codeRepository, smsService)
-	userHandler := web.NewUserHandler(userService, codeService)
-	engine := InitGinEngine(v, userHandler)
+	handler := jwtHandler.NewJwtHandler()
+	userHandler := web.NewUserHandler(userService, codeService, handler)
+	wechatService := initWeChatService()
+	weChatHandler := web.NewWeChatHandler(wechatService, userService, handler)
+	engine := InitGinEngine(v, userHandler, weChatHandler)
 	return engine
 }

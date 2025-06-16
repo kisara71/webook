@@ -8,10 +8,11 @@ import (
 	"strings"
 )
 
-func InitGinEngine(mdw []gin.HandlerFunc, udl *web.UserHandler) *gin.Engine {
+func InitGinEngine(mdw []gin.HandlerFunc, udl *web.UserHandler, wdl *web.WeChatHandler) *gin.Engine {
 	server := gin.Default()
 	server.Use(mdw...)
 	udl.RegisterRoutes(server)
+	wdl.RegisterRoutes(server)
 	return server
 }
 
@@ -30,6 +31,8 @@ func InitMiddleWare() []gin.HandlerFunc {
 			"/users/login_sms/code/send",
 			"/users/login",
 			"/users/login_sms",
+			"oauth2/wechat/authurl",
+			"oauth2/wechat/callback",
 		}).Build(),
 	}
 }

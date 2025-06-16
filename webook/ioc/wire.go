@@ -9,14 +9,14 @@ import (
 	"github.com/kisara71/WeBook/webook/internal/repository/cache"
 	"github.com/kisara71/WeBook/webook/internal/repository/dao"
 	"github.com/kisara71/WeBook/webook/internal/service"
-	"github.com/kisara71/WeBook/webook/internal/service/sms"
 	"github.com/kisara71/WeBook/webook/internal/web"
+	"github.com/kisara71/WeBook/webook/internal/web/jwtHandler"
 )
 
 func InitWebServer() *gin.Engine {
 	wire.Build(
 
-		InitDatabase, InitRedis,
+		InitDatabase, InitRedis, jwtHandler.NewJwtHandler, initRateLimiter,
 
 		dao.NewDao,
 
@@ -24,11 +24,11 @@ func InitWebServer() *gin.Engine {
 
 		repository.NewCodeRepository, repository.NewUserRepository,
 
-		sms.NewSMSService,
+		initSMS,
 
-		service.NewCodeService, service.NewUserService,
+		service.NewCodeService, service.NewUserService, initWeChatService,
 
-		web.NewUserHandler,
+		web.NewUserHandler, web.NewWeChatHandler,
 
 		InitMiddleWare,
 

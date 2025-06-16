@@ -12,7 +12,7 @@ import (
 )
 
 type Dao interface {
-	Insert(ctx context.Context, u UserEntity) error
+	Insert(ctx context.Context, user domain.User) error
 	Edit(ctx context.Context, info domain.User) error
 	FindByEmail(ctx context.Context, email string) (domain.User, error)
 	FindById(ctx context.Context, id int64) (domain.User, error)
@@ -31,6 +31,8 @@ type UserEntity struct {
 	Name     string         `gorm:"type:varchar(10)"`
 	Birthday string         `gorm:"type:date;default:NULL"`
 	AboutMe  string         `gorm:"varchar(50)"`
+	OpenID   sql.NullString `gorm:"uniqueIndex;type:varchar(20)"`
+	UnionID  sql.NullString
 	Ctime    int64
 	Utime    int64
 }
@@ -55,8 +57,9 @@ func newGormDao(db *gorm.DB) Dao {
 	}
 }
 
-func (gd *gormDao) Insert(ctx context.Context, u UserEntity) error {
+func (gd *gormDao) Insert(ctx context.Context, user domain.User) error {
 
+	u := gd.domainTOentity(user)
 	now := time.Now().UnixMilli()
 	u.Ctime = now
 	u.Utime = now
@@ -125,5 +128,33 @@ func (gd *gormDao) entityToDomain(ud UserEntity) domain.User {
 		Email:    ud.Email.String,
 		AboutMe:  ud.AboutMe,
 		Birthday: ud.Birthday,
+		WechatInfo: domain.WechatInfo{
+			OpenID:  ud.OpenID.String,
+			UnionID: ud.UnionID.String,
+		},
+	}
+}
+func (gd *gormDao) domainTOentity(dm domain.User) UserEntity {
+	return UserEntity{
+		Id:   dm.Id,
+		Name: dm.Name,
+		Phone: sql.NullString{
+			String: dm.Phone,
+			Valid:  dm.Phone != "",
+		},
+		Email: sql.NullString{
+			String: dm.Email,
+			Valid:  dm.Email != "",
+		},
+		AboutMe:  dm.AboutMe,
+		Birthday: dm.Birthday,
+		OpenID: sql.NullString{
+			String: dm.WechatInfo.OpenID,
+			Valid:  dm.WechatInfo.OpenID != "",
+		},
+		UnionID: sql.NullString{
+			String: dm.WechatInfo.UnionID,
+			Valid:  dm.WechatInfo.UnionID != "",
+		},
 	}
 }

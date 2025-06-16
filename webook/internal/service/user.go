@@ -16,6 +16,7 @@ type UserService interface {
 	FindUser(ctx context.Context, filed string, value any) (domain.User, error)
 	FindOrCreateByPhone(ctx context.Context, phone string) (domain.User, error)
 	Login(ctx context.Context, email string, password string) (domain.User, error)
+	FindOrCreateByWechat(ctx context.Context, info domain.WechatInfo) (domain.User, error)
 }
 
 func NewUserService(up repository.UserRepository) UserService {
@@ -30,6 +31,10 @@ var (
 
 type userServiceV1 struct {
 	repo repository.UserRepository
+}
+
+func (u *userServiceV1) FindOrCreateByWechat(ctx context.Context, info domain.WechatInfo) (domain.User, error) {
+	return u.repo.FindOrCreateByOpenID(ctx, info.OpenID)
 }
 
 func newUserServiceV1(userRepository repository.UserRepository) UserService {

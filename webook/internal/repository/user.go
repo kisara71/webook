@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"github.com/kisara71/WeBook/webook/internal/domain"
 	"github.com/kisara71/WeBook/webook/internal/repository/cache"
@@ -16,6 +15,7 @@ type UserRepository interface {
 	FindById(ctx context.Context, id int64) (domain.User, error)
 	FindOrCreateByPhone(ctx context.Context, phone string) (domain.User, error)
 	FindUser(ctx context.Context, filed string, value any) (domain.User, error)
+	FindOrCreateByOpenID(ctx context.Context, openID string) (domain.User, error)
 }
 
 func NewUserRepository(d dao.Dao, c cache.UserCache) UserRepository {
@@ -39,33 +39,39 @@ func newUserRepositoryV1(userDao dao.Dao, userCache cache.UserCache) UserReposit
 		userCache: userCache,
 	}
 }
-
-func (U *userRepositoryV1) Create(ctx context.Context, user domain.User) error {
-	return U.userDao.Insert(ctx, dao.UserEntity{
-		Email: sql.NullString{
-			String: user.Email,
-			Valid:  user.Email != "",
-		},
-		Phone: sql.NullString{
-			String: user.Phone,
-			Valid:  user.Phone != "",
-		},
-		Password: user.Password,
-	})
+func (u *userRepositoryV1) FindOrCreateByOpenID(ctx context.Context, openID string) (domain.User, error) {
+	user, err := u.userDao.FindUser(ctx, "OpenID", openID)
+	if err == nil {
+		return user, nil
+	} else if errors.Is(err, dao.ErrRecordNotFound) {
+		err = u.userDao.Insert(ctx, domain.User{
+			WechatInfo: domain.WechatInfo{
+				OpenID: openID,
+			},
+		})
+		if err != nil {
+			return domain.User{}, err
+		}
+		return u.FindUser(ctx, "OpenID", openID)
+	}
+	return domain.User{}, err
+}
+func (u *userRepositoryV1) Create(ctx context.Context, user domain.User) error {
+	return u.userDao.Insert(ctx, user)
 }
 
-func (U *userRepositoryV1) FindByEmail(ctx context.Context, email string) (domain.User, error) {
-	return U.userDao.FindByEmail(ctx, email)
+func (u *userRepositoryV1) FindByEmail(ctx context.Context, email string) (domain.User, error) {
+	return u.userDao.FindByEmail(ctx, email)
 }
 
-func (U *userRepositoryV1) Edit(ctx context.Context, info domain.User) error {
-	err := U.userDao.Edit(ctx, info)
+func (u *userRepositoryV1) Edit(ctx context.Context, info domain.User) error {
+	err := u.userDao.Edit(ctx, info)
 	if err != nil {
 		return err
 	}
 	go func() {
-		newUser, _ := U.userDao.FindById(ctx, info.Id)
-		err = U.userCache.Set(ctx, newUser)
+		newUser, _ := u.userDao.FindById(ctx, info.Id)
+		err = u.userCache.Set(ctx, newUser)
 		if err != nil {
 			// log
 		}
@@ -73,16 +79,16 @@ func (U *userRepositoryV1) Edit(ctx context.Context, info domain.User) error {
 	return nil
 }
 
-func (U *userRepositoryV1) FindById(ctx context.Context, id int64) (domain.User, error) {
-	if user, err := U.userCache.Get(ctx, id); err == nil {
+func (u *userRepositoryV1) FindById(ctx context.Context, id int64) (domain.User, error) {
+	if user, err := u.userCache.Get(ctx, id); err == nil {
 		return user, nil
 	} else if errors.Is(err, cache.ErrKeyNotFound) {
-		du, err := U.userDao.FindById(ctx, id)
+		du, err := u.userDao.FindById(ctx, id)
 		if err != nil {
 			return domain.User{}, err
 		}
 		//go func() {
-		err = U.userCache.Set(ctx, du)
+		err = u.userCache.Set(ctx, du)
 		if err != nil {
 			// log
 		}
@@ -93,24 +99,24 @@ func (U *userRepositoryV1) FindById(ctx context.Context, id int64) (domain.User,
 	return domain.User{}, errors.New("redisCache error")
 
 }
-func (U *userRepositoryV1) FindUser(ctx context.Context, filed string, value any) (domain.User, error) {
-	return U.userDao.FindUser(ctx, filed, value)
+func (u *userRepositoryV1) FindUser(ctx context.Context, filed string, value any) (domain.User, error) {
+	return u.userDao.FindUser(ctx, filed, value)
 }
 
-func (U *userRepositoryV1) FindOrCreateByPhone(ctx context.Context, phone string) (domain.User, error) {
-	ud, err := U.FindUser(ctx, "Phone", phone)
+func (u *userRepositoryV1) FindOrCreateByPhone(ctx context.Context, phone string) (domain.User, error) {
+	ud, err := u.FindUser(ctx, "Phone", phone)
 	if err == nil {
 		return ud, nil
 	} else if errors.Is(err, dao.ErrRecordNotFound) {
-		err = U.Create(ctx, domain.User{
+		err = u.Create(ctx, domain.User{
 			Phone: phone,
 		})
 		if err != nil {
-			return ud, err
+			return domain.User{}, err
 		}
-		return U.FindUser(ctx, "Phone", phone)
+		return u.FindUser(ctx, "Phone", phone)
 	}
-	return ud, err
+	return domain.User{}, err
 }
 
 //func (u *userRepositoryV1) FindUserInfoById(ctx *gin.Context, id int64) (domain.User, error) {

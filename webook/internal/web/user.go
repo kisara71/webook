@@ -5,13 +5,12 @@ import (
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/kisara71/GoTemplate/pkg/kstring"
 	"github.com/kisara71/WeBook/webook/internal/domain"
 	"github.com/kisara71/WeBook/webook/internal/service"
+	"github.com/kisara71/WeBook/webook/internal/web/jwtHandler"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
-	"time"
 )
 
 type UserHandler struct {
@@ -20,15 +19,17 @@ type UserHandler struct {
 	regValidatePhone *regexp.Regexp
 	userService      service.UserService
 	smsService       service.CodeService
+	jwtHd            jwtHandler.Handler
 }
 
-func NewUserHandler(userSvc service.UserService, smsSvc service.CodeService) *UserHandler {
+func NewUserHandler(userSvc service.UserService, smsSvc service.CodeService, jwtHd jwtHandler.Handler) *UserHandler {
 	return &UserHandler{
 		regValidateEmail: regexp.MustCompile("^[a-zA-Z0-9]+([-_.][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([-_.][a-zA-Z0-9]+)*\\.[a-z]{2,}$", regexp.None),
 		regValidatePWD:   regexp.MustCompile("^(?![0-9]+$)(?![a-zA-Z]+$)(?![0-9a-zA-Z]+$)(?![0-9\\W]+$)(?![a-zA-Z\\W]+$)[0-9A-Za-z\\W]{6,18}$", regexp.None),
 		regValidatePhone: regexp.MustCompile("/^(13[0-9]|14[01456879]|15[0-35-9]|16[2567]|17[0-8]|18[0-9]|19[0-35-9])\\d{8}$/", regexp.None),
 		userService:      userSvc,
 		smsService:       smsSvc,
+		jwtHd:            jwtHd,
 	}
 }
 
@@ -204,25 +205,11 @@ func (u *UserHandler) loginJwtVer(ctx *gin.Context) {
 		ctx.String(http.StatusInternalServerError, "系统错误")
 		return
 	}
-	err = u.setJwtToken(ctx, user.Id)
+	err = u.jwtHd.SetJwtToken(ctx, user.Id)
 	if err != nil {
 		// log
 	}
 	ctx.String(http.StatusOK, "login successfully")
-}
-
-func (u *UserHandler) setJwtToken(ctx *gin.Context, id int64) error {
-	tokenStr, err := jwt.NewWithClaims(jwt.SigningMethodHS512, UserClaims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 10)),
-		},
-		UserId: id,
-	}).SignedString([]byte("2yJPXiYFxjQC6D4G73vHKoJ90bv7DNixOIsTDdulApdjv0QNoK5rOL9xSASLlQvg"))
-	if err != nil {
-		return err
-	}
-	ctx.Header("x-jwt-token", tokenStr)
-	return nil
 }
 
 func (u *UserHandler) profileJwtVer(ctx *gin.Context) {
@@ -326,12 +313,18 @@ func (u *UserHandler) loginSms(ctx *gin.Context) {
 	var req PhoneLoginReq
 	err := ctx.Bind(&req)
 	if err != nil {
-		ctx.String(http.StatusOK, "系统错误")
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "系统错误",
+		})
 		return
 	}
 	code, err := kstring.ToInt(req.Code)
 	if err != nil {
-		ctx.String(http.StatusOK, "系统错误")
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "系统错误",
+		})
 		return
 	}
 	same, err := u.smsService.VerifyCode(ctx, "user", req.Phone, code)
@@ -344,7 +337,7 @@ func (u *UserHandler) loginSms(ctx *gin.Context) {
 			})
 			return
 		}
-		err = u.setJwtToken(ctx, newUD.Id)
+		err = u.jwtHd.SetJwtToken(ctx, newUD.Id)
 		if err != nil {
 			//	log
 		}
@@ -372,9 +365,4 @@ func (u *UserHandler) loginSms(ctx *gin.Context) {
 		}
 
 	}
-}
-
-type UserClaims struct {
-	jwt.RegisteredClaims
-	UserId int64
 }

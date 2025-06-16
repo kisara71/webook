@@ -1,6 +1,8 @@
 package sms
 
-import "context"
+import (
+	"context"
+)
 
 type Message struct {
 	PhoneNumbers string
@@ -9,8 +11,4 @@ type Message struct {
 
 type Service interface {
 	Send(context.Context, Message) error
-}
-
-func NewSMSService() Service {
-	return newSMSMemory()
 }
