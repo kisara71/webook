@@ -3,6 +3,7 @@ import { Button, Form, Input } from 'antd';
 import axios from "@/axios/axios";
 import Link from "next/link";
 import router from "next/router";
+import styles from './signup.module.css';
 
 const onFinish = (values: any) => {
     axios.post("/users/signup", values)
@@ -31,46 +32,54 @@ const onFinishFailed = (errorInfo: any) => {
 };
 
 const SignupForm: React.FC = () => (
-    <Form
-        name="basic"
-        labelCol={{ span: 8 }}
-        wrapperCol={{ span: 16 }}
-        style={{ maxWidth: 600 }}
-        initialValues={{ remember: true }}
-        onFinish={onFinish}
-        onFinishFailed={onFinishFailed}
-        autoComplete="off"
-    >
-        <Form.Item
-            label="邮箱"
-            name="email"
-            rules={[{ required: true, message: '请输入邮箱' }]}
-        >
-            <Input />
-        </Form.Item>
+    <div className={styles.container}>
+        <div className={styles.formWrapper}>
+            <h1 className={styles.title}>注册</h1>
+            <Form
+                name="basic"
+                layout="vertical"
+                style={{ maxWidth: 400, width: '100%' }}
+                initialValues={{ remember: true }}
+                onFinish={onFinish}
+                onFinishFailed={onFinishFailed}
+                autoComplete="off"
+                className={styles.form}
+            >
+                <Form.Item
+                    name="email"
+                    rules={[{ required: true, message: '请输入邮箱' }]}
+                >
+                    <Input placeholder="邮箱" size="large" />
+                </Form.Item>
 
-        <Form.Item
-            label="密码"
-            name="password"
-            rules={[{ required: true, message: '请输入密码' }]}
-        >
-            <Input.Password />
-        </Form.Item>
+                <Form.Item
+                    name="password"
+                    rules={[{ required: true, message: '请输入密码' }]}
+                >
+                    <Input.Password placeholder="密码" size="large" />
+                </Form.Item>
 
-        <Form.Item
-            label="确认密码"
-            name="confirmPassword"
-            rules={[{ required: true, message: '请确认密码' }]}
-        >
-            <Input.Password />
-        </Form.Item>
-        <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
-            <Button type="primary" htmlType="submit">
-                注册
-            </Button>
-            <Link href={"/users/login"}>&nbsp;登录</Link>
-        </Form.Item>
-    </Form>
+                <Form.Item
+                    name="confirmPassword"
+                    rules={[{ required: true, message: '请确认密码' }]}
+                >
+                    <Input.Password placeholder="确认密码" size="large" />
+                </Form.Item>
+
+                <Form.Item>
+                    <Button type="primary" htmlType="submit" block size="large" className={styles.submitButton}>
+                        注册
+                    </Button>
+                </Form.Item>
+
+                <div className={styles.links}>
+                    <Link href={"/users/login"} className={styles.link}>
+                        已有账号？立即登录
+                    </Link>
+                </div>
+            </Form>
+        </div>
+    </div>
 );
 
 export default SignupForm;

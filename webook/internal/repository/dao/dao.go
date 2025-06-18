@@ -16,7 +16,7 @@ type Dao interface {
 	FindByEmail(ctx context.Context, email string) (domain.User, error)
 	FindById(ctx context.Context, id int64) (domain.User, error)
 	FindUser(ctx context.Context, filed string, value any) (domain.User, error)
-	FindBinding(ctx context.Context, provider string, externalID string) (domain.Oauth2Binding, error)
+	FindBinding(ctx context.Context, binding domain.Oauth2Binding) (domain.Oauth2Binding, error)
 	InsertOauth2Binding(ctx context.Context, binding domain.Oauth2Binding) (domain.Oauth2Binding, error)
 }
 
@@ -58,9 +58,9 @@ func (gd *gormDao) InsertOauth2Binding(ctx context.Context, binding domain.Oauth
 	return binding, nil
 }
 
-func (gd *gormDao) FindBinding(ctx context.Context, provider string, externalID string) (domain.Oauth2Binding, error) {
-	var res domain.Oauth2Binding
-	err := gd.db.WithContext(ctx).Where("provider = ? AND externalID = ?", provider, externalID).First(&res).Error
+func (gd *gormDao) FindBinding(ctx context.Context, binding domain.Oauth2Binding) (domain.Oauth2Binding, error) {
+	entity := oauth2BindingDomainToEntity(&binding)
+	err := gd.db.WithContext(ctx).Where("provider = ? AND external_id = ?", binding.Provider, binding.ExternalID).First(&entity).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return domain.Oauth2Binding{}, ErrRecordNotFound
@@ -68,7 +68,7 @@ func (gd *gormDao) FindBinding(ctx context.Context, provider string, externalID 
 			return domain.Oauth2Binding{}, ErrSystemError
 		}
 	}
-	return res, nil
+	return oauth2BindingEntityToDomain(&entity), nil
 }
 
 func newGormDao(db *gorm.DB) Dao {

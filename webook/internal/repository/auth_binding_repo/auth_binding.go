@@ -26,9 +26,14 @@ func NewRepository(authDao dao.Dao) Repository {
 }
 
 func (r *repositoryV1) FindOrCreateOauth2Binding(ctx context.Context, binding domain.Oauth2Binding) (domain.Oauth2Binding, error) {
-	res, err := r.authDao.FindBinding(ctx, binding.Provider.ToString(), binding.ExternalID)
+	res, err := r.authDao.FindBinding(ctx, binding)
 	if err != nil {
 		if errors.Is(err, dao.ErrRecordNotFound) {
+			user, err := r.authDao.InsertUser(ctx, domain.User{})
+			if err != nil {
+				return domain.Oauth2Binding{}, err
+			}
+			binding.UserID = user.Id
 			res, err = r.authDao.InsertOauth2Binding(ctx, binding)
 			if err != nil {
 				return domain.Oauth2Binding{}, err

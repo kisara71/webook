@@ -39,12 +39,26 @@ func oauth2BindingDomainToEntity(dm *domain.Oauth2Binding) Oauth2BindingEntity {
 		UserID: dm.UserID,
 
 		Provider: sql.NullString{
-			String: dm.Provider.ToString(),
-			Valid:  dm.Provider.ToString() != "",
+			String: dm.Provider,
+			Valid:  dm.Provider != "",
 		},
 		ExternalID: sql.NullString{
 			String: dm.ExternalID,
 			Valid:  dm.ExternalID != "",
 		},
+		AccessToken: sql.NullString{
+			String: dm.AccessToken,
+			Valid:  dm.AccessToken != "",
+		},
+	}
+}
+
+func oauth2BindingEntityToDomain(entity *Oauth2BindingEntity) domain.Oauth2Binding {
+	return domain.Oauth2Binding{
+		ID:          entity.ID,
+		UserID:      entity.UserID,
+		ExternalID:  entity.ExternalID.String,
+		Provider:    entity.Provider.String,
+		AccessToken: entity.AccessToken.String,
 	}
 }

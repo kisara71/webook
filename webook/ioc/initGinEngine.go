@@ -23,7 +23,7 @@ func InitMiddleWare() []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		cors.New(cors.Config{
 			AllowMethods:     []string{"POST", "GET"},
-			AllowHeaders:     []string{"Authorization", "Content-Type"},
+			AllowHeaders:     []string{"Authorization", "Content-Type", "Accept"},
 			AllowCredentials: true,
 			ExposeHeaders:    []string{"x-jwt-token"},
 			AllowOriginFunc: func(origin string) bool {
@@ -34,8 +34,10 @@ func InitMiddleWare() []gin.HandlerFunc {
 			"/users/login_sms/code/send",
 			"/users/login",
 			"/users/login_sms",
-			"oauth2/wechat/authurl",
-			"oauth2/wechat/callback",
+			"/oauth2/wechat/authurl",
+			"/oauth2/wechat/callback",
+			"/oauth2/github/authurl",
+			"/oauth2/github/callback",
 		}).Build(),
 	}
 }

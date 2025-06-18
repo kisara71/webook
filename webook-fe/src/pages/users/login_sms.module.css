@@ -1,0 +1,100 @@
+.container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f5f5f5;
+    padding: 20px;
+}
+
+.formWrapper {
+    background: white;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 480px;
+    transition: transform 0.3s ease;
+}
+
+.formWrapper:hover {
+    transform: translateY(-2px);
+}
+
+.title {
+    text-align: center;
+    margin-bottom: 32px;
+    color: #333;
+    font-size: 24px;
+    font-weight: 500;
+    width: 100%;
+}
+
+.form {
+    width: 100%;
+}
+
+.submitButton {
+    margin-top: 16px;
+    height: 44px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.submitButton:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.links {
+    margin-top: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+}
+
+.link {
+    color: #666;
+    text-decoration: none;
+    transition: color 0.3s ease;
+    font-size: 14px;
+}
+
+.link:hover {
+    color: #1890ff;
+}
+
+.codeInputWrapper {
+    display: flex;
+    gap: 12px;
+}
+
+.codeInputWrapper :global(.ant-input) {
+    flex: 1;
+}
+
+.sendCodeButton {
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.sendCodeButton:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 输入框样式优化 */
+.form :global(.ant-input) {
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.form :global(.ant-input:hover) {
+    border-color: #40a9ff;
+}
+
+.form :global(.ant-input:focus) {
+    border-color: #1890ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+} 

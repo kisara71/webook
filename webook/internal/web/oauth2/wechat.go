@@ -10,13 +10,13 @@ import (
 )
 
 type WeChatHandler struct {
-	oauth2Svc      oauth2.Service
+	wechatSvc      oauth2.Service
 	authBindingSvc auth_binding_service.Service
 }
 
 func NewWeChatHandler(oauth2Svc oauth2.Service, authBindingSvc auth_binding_service.Service) Handler {
 	return &WeChatHandler{
-		oauth2Svc:      oauth2Svc,
+		wechatSvc:      oauth2Svc,
 		authBindingSvc: authBindingSvc,
 	}
 }
@@ -26,7 +26,7 @@ func (w *WeChatHandler) RegisterRoutes(server *gin.Engine) {
 	server.GET("oauth2/wechat/callback", w.CallBack)
 }
 func (w *WeChatHandler) AuthURL(ctx *gin.Context) {
-	url := w.oauth2Svc.AuthURL(ctx)
+	url := w.wechatSvc.AuthURL(ctx)
 
 	ctx.JSON(http.StatusOK, web.Result{
 		Code: 0,
@@ -39,7 +39,7 @@ func (w *WeChatHandler) CallBack(ctx *gin.Context) {
 	code := ctx.Query("code")
 	state := ctx.Query("state")
 
-	info, err := w.oauth2Svc.ExchangeCode(ctx, code, state)
+	info, err := w.wechatSvc.ExchangeCode(ctx, code, state)
 	if err != nil {
 		ctx.JSON(http.StatusOK, web.Result{
 			Code: 5,

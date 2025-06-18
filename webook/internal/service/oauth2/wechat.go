@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	oauth2Config "github.com/kisara71/WeBook/webook/config/oauth2"
 	"github.com/kisara71/WeBook/webook/internal/domain"
 	"net/http"
 )
@@ -13,13 +14,13 @@ import (
 //const authURLRedirect = "localhost:8080/oauth2/wechat/callback"
 //const verifyPattern = "https://api.weixin.qq.com/sns/oauth2/access_token?appid=%s&secret=%s&code=%s&grant_type=authorization_code"
 
-func NewWechatService(config Config) Service {
+func NewWechatService(config oauth2Config.Config) Service {
 	return &wechatService{
 		appId:             config.ClientID,
 		secret:            config.ClientSecret,
 		authURLPattern:    config.AuthURLPattern,
 		redirectURL:       "http://localhost:8080/oauth2/wechat/callback",
-		getBindURLPattern: config.GetBindURLPattern,
+		getBindURLPattern: config.ExchangeCodeURLPattern,
 		client:            http.DefaultClient,
 	}
 }
@@ -46,7 +47,7 @@ func (w *wechatService) ExchangeCode(ctx context.Context, code string, state str
 		return domain.Oauth2Binding{}, err
 	}
 
-	var res result
+	var res wechatResult
 	d := json.NewDecoder(resp.Body)
 	err = d.Decode(&res)
 	if err != nil || res.ErrCode != 0 {
@@ -65,7 +66,7 @@ func (w *wechatService) AuthURL(ctx context.Context) string {
 	return fmt.Sprintf(w.authURLPattern, w.appId, w.redirectURL, state)
 }
 
-type result struct {
+type wechatResult struct {
 	AccessToken  string `json:"access_token"`
 	ExpiresIn    int64  `json:"expires_in"`
 	RefreshToken string `json:"refresh_token"`

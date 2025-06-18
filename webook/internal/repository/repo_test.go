@@ -109,7 +109,7 @@ func TestUserRepositoryV1_FindOrCreateByPhone(t *testing.T) {
 			mock: func(ctrl *gomock.Controller) dao.Dao {
 				d := daomock.NewMockDao(ctrl)
 				d.EXPECT().FindUser(gomock.Any(), "Phone", "123").Return(domain.User{}, dao.ErrRecordNotFound)
-				d.EXPECT().Insert(gomock.Any(), dao.UserEntity{
+				d.EXPECT().InsertUser(gomock.Any(), dao.UserEntity{
 					Phone: sql.NullString{
 						String: "123",
 						Valid:  true,
